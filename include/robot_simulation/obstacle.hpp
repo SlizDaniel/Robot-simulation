@@ -19,5 +19,7 @@ namespace robot_simulation{
         Pose get_obstacle_pose() {return pose_;}
 
         Rectangle get_obstacle_size() {return size_;}
+
+        RectangleCorners getObstacleCorners() const;
     };
 }// namespace robot_simulation
