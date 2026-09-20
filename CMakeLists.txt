@@ -13,6 +13,8 @@ add_library(robot_simulator
     src/robot.cpp
     src/environment.cpp
     src/simulation.cpp
+    src/geometry.cpp
+    src/obstacle.cpp
 )
 
 target_include_directories(robot_simulator
