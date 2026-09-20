@@ -25,3 +25,29 @@ target_include_directories(robot_simulator
 include(CTest)
 
 enable_testing()
+
+if(BUILD_TESTING)
+    include(FetchContent)
+
+    FetchContent_Declare(
+        googletest
+        URL
+        https://github.com/google/googletest/archive/refs/tags/v1.14.0.tar.gz
+    )
+
+    FetchContent_MakeAvailable(googletest)
+
+add_executable(robot_simulator_tests
+    tests/geometry_tests.cpp
+    tests/robot_tests.cpp)
+
+target_link_libraries(robot_simulator_tests
+    PRIVATE
+        robot_simulator
+        GTest::gtest_main
+)
+
+include(GoogleTest)
+gtest_discover_tests(robot_simulator_tests)
+endif()
+
