@@ -16,9 +16,11 @@ namespace robot_simulation{
 
         Environment(Rectangle size);
 
-        bool collides(Robot& robot) const;
+        bool collides(const Robot& robot) const;
 
-        void addObstacle(Obstacle& obstacle);
+        bool isRobotInside(const Robot& robot) const;
+
+        void addObstacle(const Obstacle& obstacle);
 
         Rectangle getEnvironmentSize() const {return size_;};
 

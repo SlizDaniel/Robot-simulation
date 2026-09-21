@@ -50,6 +50,66 @@ namespace robot_simulation{
         EXPECT_TRUE(environment.getObstacles().empty());
     }
 
+    TEST(EnvironmentTests, ReportsRobotInsideWhenAllCornersAreWithinEnvironment){
+        const Rectangle environment_size {10.0, 10.0};
+        const Pose robot_pose {0.0, 0.0, 0.0};
+        const Velocity velocity {0.0, 0.0};
+        const Rectangle robot_size {2.0, 4.0};
+        const Robot robot(robot_pose, velocity, robot_size);
+
+        const Environment environment(environment_size);
+
+        EXPECT_TRUE(environment.isRobotInside(robot));
+    }
+
+    TEST(EnvironmentTests, ReportsRobotOutsideWhenCornerExceedsHorizontalBoundary){
+        const Rectangle environment_size {10.0, 10.0};
+        const Pose robot_pose {3.1, 0.0, 0.0};
+        const Velocity velocity {0.0, 0.0};
+        const Rectangle robot_size {2.0, 4.0};
+        const Robot robot(robot_pose, velocity, robot_size);
+
+        const Environment environment(environment_size);
+
+        EXPECT_FALSE(environment.isRobotInside(robot));
+    }
+
+    TEST(EnvironmentTests, ReportsRobotOutsideWhenCornerExceedsVerticalBoundary){
+        const Rectangle environment_size {10.0, 10.0};
+        const Pose robot_pose {0.0, 4.1, 0.0};
+        const Velocity velocity {0.0, 0.0};
+        const Rectangle robot_size {2.0, 4.0};
+        const Robot robot(robot_pose, velocity, robot_size);
+
+        const Environment environment(environment_size);
+
+        EXPECT_FALSE(environment.isRobotInside(robot));
+    }
+
+    TEST(EnvironmentTests, ReportsRobotInsideWhenTouchingBoundary){
+        const Rectangle environment_size {10.0, 10.0};
+        const Pose robot_pose {3.0, 0.0, 0.0};
+        const Velocity velocity {0.0, 0.0};
+        const Rectangle robot_size {2.0, 4.0};
+        const Robot robot(robot_pose, velocity, robot_size);
+
+        const Environment environment(environment_size);
+
+        EXPECT_TRUE(environment.isRobotInside(robot));
+    }
+
+    TEST(EnvironmentTests, ReportsRotatedRobotOutsideWhenCornerExceedsBoundary){
+        const Rectangle environment_size {10.0, 10.0};
+        const Pose robot_pose {3.5, 0.0, pi / 4.0};
+        const Velocity velocity {0.0, 0.0};
+        const Rectangle robot_size {2.0, 4.0};
+        const Robot robot(robot_pose, velocity, robot_size);
+
+        const Environment environment(environment_size);
+
+        EXPECT_FALSE(environment.isRobotInside(robot));
+    }
+
     TEST(EnvironmentTests, AddsObstacle){
         const Rectangle environment_size {20.0, 30.0};
         const Pose obstacle_pose {2.0, 3.0, 0.2};
