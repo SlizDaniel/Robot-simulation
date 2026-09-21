@@ -2,6 +2,7 @@
 #include <robot_simulation/math_constans.hpp>
 #include <robot_simulation/obstacle.hpp>
 #include <robot_simulation/types.hpp>
+#include <stdexcept>
 
 #include "helpers.hpp"
 
@@ -20,6 +21,34 @@ namespace robot_simulation{
         EXPECT_DOUBLE_EQ(actual_pose.theta, pose.theta);
         EXPECT_DOUBLE_EQ(actual_size.width, size.width);
         EXPECT_DOUBLE_EQ(actual_size.length, size.length);
+    }
+
+    TEST(ObstacleTests, RejectsZeroWidth){
+        const Pose pose {0.0, 0.0, 0.0};
+        const Rectangle size {0.0, 4.0};
+
+        EXPECT_THROW(Obstacle(pose, size), std::invalid_argument);
+    }
+
+    TEST(ObstacleTests, RejectsZeroLength){
+        const Pose pose {0.0, 0.0, 0.0};
+        const Rectangle size {2.0, 0.0};
+
+        EXPECT_THROW(Obstacle(pose, size), std::invalid_argument);
+    }
+
+    TEST(ObstacleTests, RejectsNegativeWidth){
+        const Pose pose {0.0, 0.0, 0.0};
+        const Rectangle size {-2.0, 4.0};
+
+        EXPECT_THROW(Obstacle(pose, size), std::invalid_argument);
+    }
+
+    TEST(ObstacleTests, RejectsNegativeLength){
+        const Pose pose {0.0, 0.0, 0.0};
+        const Rectangle size {2.0, -4.0};
+
+        EXPECT_THROW(Obstacle(pose, size), std::invalid_argument);
     }
 
     TEST(ObstacleTests, CornersCalculation){

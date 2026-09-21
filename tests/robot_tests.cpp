@@ -3,6 +3,7 @@
 #include <robot_simulation/types.hpp>
 #include "helpers.hpp"
 #include <robot_simulation/math_constans.hpp>
+#include <stdexcept>
 
 namespace robot_simulation{
     TEST(RobotTests, StoresConstructorArguments){
@@ -23,6 +24,38 @@ namespace robot_simulation{
         EXPECT_DOUBLE_EQ(actual_velocity.angularVelocity, velocity.angularVelocity);
         EXPECT_DOUBLE_EQ(actual_size.width, size.width);
         EXPECT_DOUBLE_EQ(actual_size.length, size.length);
+    }
+
+    TEST(RobotTests, RejectsZeroWidth){
+        const Pose pose {0.0, 0.0, 0.0};
+        const Velocity velocity {0.0, 0.0};
+        const Rectangle size {0.0, 4.0};
+
+        EXPECT_THROW(Robot(pose, velocity, size), std::invalid_argument);
+    }
+
+    TEST(RobotTests, RejectsZeroLength){
+        const Pose pose {0.0, 0.0, 0.0};
+        const Velocity velocity {0.0, 0.0};
+        const Rectangle size {2.0, 0.0};
+
+        EXPECT_THROW(Robot(pose, velocity, size), std::invalid_argument);
+    }
+
+    TEST(RobotTests, RejectsNegativeWidth){
+        const Pose pose {0.0, 0.0, 0.0};
+        const Velocity velocity {0.0, 0.0};
+        const Rectangle size {-2.0, 4.0};
+
+        EXPECT_THROW(Robot(pose, velocity, size), std::invalid_argument);
+    }
+
+    TEST(RobotTests, RejectsNegativeLength){
+        const Pose pose {0.0, 0.0, 0.0};
+        const Velocity velocity {0.0, 0.0};
+        const Rectangle size {2.0, -4.0};
+
+        EXPECT_THROW(Robot(pose, velocity, size), std::invalid_argument);
     }
 
     TEST(RobotTests, CornersCalculation){

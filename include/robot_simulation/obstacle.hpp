@@ -11,10 +11,7 @@ namespace robot_simulation{
 
         public:
 
-        Obstacle(Pose pose, Rectangle rectangle){
-            pose_ = pose;
-            size_ = rectangle;
-        }
+        Obstacle(Pose pose, Rectangle rectangle);
 
         Pose get_obstacle_pose() const {return pose_;}
 

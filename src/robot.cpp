@@ -1,8 +1,18 @@
 #include <robot_simulation/robot.hpp>
 #include <robot_simulation/geometry.hpp>
 #include <cmath>
+#include <stdexcept>
 
 namespace robot_simulation{
+
+    Robot::Robot(Pose pose, Velocity velocity, Rectangle size):
+            pose_(pose),
+            velocity_(velocity),
+            size_(size){
+        if (size.length <= 0 || size.width <= 0){
+            throw std::invalid_argument("Robot size must be positive!");
+        }
+    }
 
     void Robot::stop(){
         velocity_ = {0.0 , 0.0};        

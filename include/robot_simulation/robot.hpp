@@ -14,11 +14,7 @@ namespace robot_simulation{
 
         public:
 
-        Robot(Pose pose, Velocity velocity, Rectangle size){
-            pose_ = pose;
-            velocity_ = velocity;
-            size_ = size;
-        };
+        Robot(Pose pose, Velocity velocity, Rectangle size);
 
         Pose getPose() const {return pose_;}
 
