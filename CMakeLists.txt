@@ -41,7 +41,8 @@ add_executable(robot_simulator_tests
     tests/geometry_tests.cpp
     tests/robot_tests.cpp
     tests/obstacle_tests.cpp
-    tests/environment_tests.cpp)
+    tests/environment_tests.cpp
+    tests/simulation_tests.cpp)
 
 target_link_libraries(robot_simulator_tests
     PRIVATE
