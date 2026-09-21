@@ -4,6 +4,7 @@
 #include <robot_simulation/math_constans.hpp>
 #include <algorithm>
 #include <vector>
+#include <stdexcept>
 
 namespace robot_simulation{
     namespace{
@@ -51,6 +52,12 @@ namespace robot_simulation{
             return(collisions == rotations.size());
         }  
     }//namespace
+    Environment::Environment(Rectangle size):
+        size_(size){
+            if (size.length <= 0 || size.width <= 0){
+                throw std::invalid_argument("Environment size must be positive!");
+            }
+        }
 
     bool Environment::collides(Robot& robot) const{
         for(std::size_t i = 0; i<obstacles_.size(); i++){

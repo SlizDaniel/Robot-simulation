@@ -14,9 +14,7 @@ namespace robot_simulation{
         
         public:
 
-        Environment(Rectangle rectangle){
-            size_ = rectangle;
-        }
+        Environment(Rectangle size);
 
         bool collides(Robot& robot) const;
 
