@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(robot_simulator
-    VERSION 0.1
+    VERSION 0.2
     LANGUAGES CXX
 )
 
@@ -20,6 +20,15 @@ add_library(robot_simulator
 target_include_directories(robot_simulator
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+add_executable(robot_simulator_app
+    app/main.cpp
+)
+
+target_link_libraries(robot_simulator_app
+    PRIVATE
+        robot_simulator
 )
 
 include(CTest)
@@ -53,4 +62,3 @@ target_link_libraries(robot_simulator_tests
 include(GoogleTest)
 gtest_discover_tests(robot_simulator_tests)
 endif()
-
