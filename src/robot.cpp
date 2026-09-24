@@ -12,31 +12,50 @@ namespace robot_simulation{
         if (size.length <= 0 || size.width <= 0){
             throw std::invalid_argument("Robot size must be positive!");
         }
+        addPointToTrajectory(pose_);
     }
 
     void Robot::stop(){
         velocity_ = {0.0 , 0.0};        
     }
 
-    void Robot::move(double dt){
+namespace{
+    Pose calculateNextPose(Pose pose, Velocity velocity, double dt) {
         double dx = 0.0;
         double dy = 0.0;
-        if (std::abs(velocity_.angularVelocity) * dt < 1e-6){
-            dy = velocity_.linearVelocity * dt * std::sin(pose_.theta);
-            dx = velocity_.linearVelocity * dt *std::cos(pose_.theta);
-            pose_.theta +=velocity_.angularVelocity * dt;
+        if (std::abs(velocity.angularVelocity) * dt < 1e-6){
+            dy = velocity.linearVelocity * dt * std::sin(pose.theta);
+            dx = velocity.linearVelocity * dt *std::cos(pose.theta);
+            pose.theta +=velocity.angularVelocity * dt;
         }
         else{
-            double theta_next = pose_.theta + velocity_.angularVelocity * dt;
-            dy = (velocity_.linearVelocity/velocity_.angularVelocity) * (std::cos(pose_.theta)-std::cos(theta_next));
-            dx = (velocity_.linearVelocity/velocity_.angularVelocity) * (std::sin(theta_next)-std::sin(pose_.theta));
-            pose_.theta = theta_next;
+            double theta_next = pose.theta + velocity.angularVelocity * dt;
+            dy = (velocity.linearVelocity/velocity.angularVelocity)
+            * (std::cos(pose.theta)-std::cos(theta_next));
+            dx = (velocity.linearVelocity/velocity.angularVelocity) *
+            (std::sin(theta_next)-std::sin(pose.theta));
+            pose.theta = theta_next;
         }
-        pose_.x += dx;
-        pose_.y += dy;
+
+        return(Pose{pose.x + dx, pose.y + dy, pose.theta});
+    }
+}//namespace
+
+    Pose Robot::robotNextPose(double dt) const {
+        return(calculateNextPose(pose_, velocity_, dt));
     }
 
     RectangleCorners Robot::getRobotCorners() const {
         return calculateRectangleCorners(pose_, size_);
     }
-}
+
+    void Robot::setVelocity(double linear_velocity, double angular_velocity){
+        velocity_.linearVelocity = linear_velocity;
+        velocity_.angularVelocity = angular_velocity;
+    }
+
+    void Robot::move(double dt) {
+        pose_ = calculateNextPose(pose_, velocity_, dt);
+        addPointToTrajectory(pose_);
+    }
+}//namespace robot_simulation
