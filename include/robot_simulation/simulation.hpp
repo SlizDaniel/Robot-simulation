@@ -32,7 +32,7 @@ namespace robot_simulation{
 
         SimulationUpdate update();
 
-        SimulationResult runSteps(std::size_t simulation_duration);
+        SimulationResult runSteps(std::size_t step_count);
 
         std::size_t getSimulationStep() const {return simulation_step_;}
 

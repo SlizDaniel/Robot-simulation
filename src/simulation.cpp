@@ -29,9 +29,9 @@ namespace robot_simulation{
         return(SimulationUpdate{StopReason::None, true});
     }
 
-    SimulationResult Simulation::runSteps(std::size_t simulation_duration){
+    SimulationResult Simulation::runSteps(std::size_t step_count){
         std::size_t executed_steps = 0;
-        while(executed_steps < simulation_duration){
+        while(executed_steps < step_count){
             SimulationUpdate step_result = update();
             if (step_result.step_accepted != true){
                 return(SimulationResult{executed_steps, false, step_result.stop_reason});
