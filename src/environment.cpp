@@ -8,11 +8,10 @@
 
 namespace robot_simulation{
     namespace{
-        bool collisionObstacleRobot(const Robot& robot, const Obstacle& obstacle){
+        bool collisionObstacleRobot(const RectangleCorners& robot_corners,
+            const Pose& robot_position, const Obstacle& obstacle){
 
-            const RectangleCorners robot_corners = robot.getRobotCorners();
             const RectangleCorners obstacle_corners = obstacle.getObstacleCorners();
-            const Pose robot_position = robot.getPose();
             const Pose obstacle_position = obstacle.get_obstacle_pose();
             std::vector<std::array<double, 2>> rotations = {};
             rotations.push_back({std::cos(robot_position.theta), 
@@ -30,8 +29,10 @@ namespace robot_simulation{
                 std::array<double, 4> robot_projections = {};
                 std::array<double, 4> obstacle_projections = {};
                 for (std::size_t j=0; j<robot_corners.size(); j++){
-                    robot_projections[j] = robot_corners[j].x * rotations[i][0] + robot_corners[j].y * rotations[i][1];
-                    obstacle_projections[j] = obstacle_corners[j].x * rotations[i][0] + obstacle_corners[j].y * rotations[i][1];
+                    robot_projections[j] = robot_corners[j].x
+                    * rotations[i][0] + robot_corners[j].y * rotations[i][1];
+                    obstacle_projections[j] = obstacle_corners[j].x
+                    * rotations[i][0] + obstacle_corners[j].y * rotations[i][1];
                 }
                 double max_robot = *std::max_element(
                     robot_projections.begin(),
@@ -59,17 +60,17 @@ namespace robot_simulation{
             }
         }
 
-    bool Environment::collides(const Robot& robot) const{
+    bool Environment::collides(const RectangleCorners& robot_corners,
+        const Pose& robot_position) const{
         for(std::size_t i = 0; i<obstacles_.size(); i++){
-            if (collisionObstacleRobot(robot, obstacles_[i])){
+            if (collisionObstacleRobot(robot_corners, robot_position, obstacles_[i])){
                 return true;
             }
         }
         return false;
     }
 
-    bool Environment::isRobotInside(const Robot& robot) const {
-        RectangleCorners robot_corners = robot.getRobotCorners();
+    bool Environment::isRobotInside(const RectangleCorners& robot_corners) const {
         for (std::size_t i = 0; i < robot_corners.size(); i++){
             if (!(-size_.length/2 <= robot_corners[i].x && robot_corners[i].x <= size_.length/2
                 && -size_.width/2 <= robot_corners[i].y && robot_corners[i].y <= size_.width/2)){
@@ -81,5 +82,13 @@ namespace robot_simulation{
 
     void Environment::addObstacle(const Obstacle& obstacle){
         obstacles_.push_back(obstacle);
+    }
+
+    bool Environment::collides(const Robot& robot) const {
+        return collides(robot.getRobotCorners(), robot.getPose());
+    }
+
+    bool Environment::isRobotInside(const Robot& robot) const {
+        return isRobotInside(robot.getRobotCorners());
     }
 }//robot_simulation
