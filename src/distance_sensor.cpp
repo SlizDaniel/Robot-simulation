@@ -25,4 +25,14 @@ namespace robot_simulation{
                 throw std::invalid_argument("Field of view must be in range (0, pi]");
             }
         }
+
+    Pose DistanceSensor::getWorldPose(const Pose& robot_pose) const {
+        const double sin_theta = std::sin(robot_pose.theta);
+        const double cos_theta = std::cos(robot_pose.theta);
+        const double dx = relativeToRobotPose_.x * cos_theta -
+                    sin_theta * relativeToRobotPose_.y;
+        const double dy = relativeToRobotPose_.y * cos_theta +
+                    sin_theta * relativeToRobotPose_.x;
+        return (Pose{robot_pose.x + dx, robot_pose.y + dy, robot_pose.theta + relativeToRobotPose_.theta});
+    }
 }//namespace robot_simulation

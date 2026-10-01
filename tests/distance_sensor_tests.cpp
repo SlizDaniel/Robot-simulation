@@ -5,6 +5,8 @@
 #include <limits>
 #include <stdexcept>
 
+#include "helpers.hpp"
+
 namespace robot_simulation{
     TEST(DistanceSensorTests, StoresConstructorArguments){
         const Pose relative_pose {1.0, 2.0, 0.3};
@@ -57,5 +59,47 @@ namespace robot_simulation{
 
     TEST(DistanceSensorTests, AcceptsFieldOfViewEqualToPi){
         EXPECT_NO_THROW(DistanceSensor(0.0, 10.0, Pose{}, pi));
+    }
+
+    TEST(DistanceSensorTests, CalculatesWorldPoseWithoutRobotRotation){
+        const DistanceSensor sensor(0.0, 10.0, Pose{1.0, 2.0, 0.3}, pi / 3.0);
+        const Pose robot_pose {10.0, 5.0, 0.0};
+
+        const Pose sensor_pose = sensor.getWorldPose(robot_pose);
+
+        EXPECT_NEAR(sensor_pose.x, 11.0, tolerance);
+        EXPECT_NEAR(sensor_pose.y, 7.0, tolerance);
+        EXPECT_NEAR(sensor_pose.theta, 0.3, tolerance);
+    }
+
+    TEST(DistanceSensorTests, RotatesForwardOffsetWithRobot){
+        const DistanceSensor sensor(0.0, 10.0, Pose{1.0, 0.0, 0.0}, pi / 3.0);
+        const Pose robot_pose {10.0, 5.0, pi / 2.0};
+
+        const Pose sensor_pose = sensor.getWorldPose(robot_pose);
+
+        EXPECT_NEAR(sensor_pose.x, 10.0, tolerance);
+        EXPECT_NEAR(sensor_pose.y, 6.0, tolerance);
+        EXPECT_NEAR(sensor_pose.theta, pi / 2.0, tolerance);
+    }
+
+    TEST(DistanceSensorTests, RotatesSideOffsetWithRobot){
+        const DistanceSensor sensor(0.0, 10.0, Pose{0.0, 1.0, 0.0}, pi / 3.0);
+        const Pose robot_pose {0.0, 0.0, pi / 2.0};
+
+        const Pose sensor_pose = sensor.getWorldPose(robot_pose);
+
+        EXPECT_NEAR(sensor_pose.x, -1.0, tolerance);
+        EXPECT_NEAR(sensor_pose.y, 0.0, tolerance);
+        EXPECT_NEAR(sensor_pose.theta, pi / 2.0, tolerance);
+    }
+
+    TEST(DistanceSensorTests, AddsSensorAndRobotOrientations){
+        const DistanceSensor sensor(0.0, 10.0, Pose{0.0, 0.0, pi / 4.0}, pi / 3.0);
+        const Pose robot_pose {0.0, 0.0, pi / 2.0};
+
+        const Pose sensor_pose = sensor.getWorldPose(robot_pose);
+
+        EXPECT_NEAR(sensor_pose.theta, 3.0 * pi / 4.0, tolerance);
     }
 }
