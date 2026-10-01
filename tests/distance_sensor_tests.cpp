@@ -1,7 +1,10 @@
 #include <gtest/gtest.h>
 #include <robot_simulation/distance_sensor.hpp>
+#include <robot_simulation/environment.hpp>
 #include <robot_simulation/math_constans.hpp>
+#include <robot_simulation/obstacle.hpp>
 #include <robot_simulation/types.hpp>
+#include <cmath>
 #include <limits>
 #include <stdexcept>
 
@@ -102,4 +105,204 @@ namespace robot_simulation{
 
         EXPECT_NEAR(sensor_pose.theta, 3.0 * pi / 4.0, tolerance);
     }
-}
+
+    TEST(DistanceSensorTests, ReportsNoDetectionInEmptyEnvironment){
+        const Environment environment(Rectangle{100.0, 100.0});
+        const DistanceSensor sensor(0.0, 10.0, Pose{}, pi / 2.0);
+
+        const RaycastResult detection = sensor.nearestObstacleDetected(environment, 3, Pose{});
+
+        EXPECT_FALSE(detection.object_detected);
+        EXPECT_TRUE(std::isinf(detection.distance_to_object));
+        EXPECT_EQ(detection.detection_type, DetectionType::NOOBJECTDETECTED);
+    }
+
+    TEST(DistanceSensorTests, DetectsObstacleWithSingleCentralRay){
+        Environment environment(Rectangle{100.0, 100.0});
+        environment.addObstacle(Obstacle(Pose{5.0, 0.0, 0.0}, Rectangle{2.0, 2.0}));
+        const DistanceSensor sensor(0.0, 10.0, Pose{}, pi / 2.0);
+
+        const RaycastResult detection = sensor.nearestObstacleDetected(environment, 1, Pose{});
+
+        EXPECT_TRUE(detection.object_detected);
+        EXPECT_NEAR(detection.distance_to_object, 4.0, tolerance);
+        EXPECT_EQ(detection.detection_type, DetectionType::OBJECTDETECTED);
+    }
+
+    TEST(DistanceSensorTests, SingleRayRejectsObstacleCloserThanMinDistance){
+        Environment environment(Rectangle{100.0, 100.0});
+        environment.addObstacle(Obstacle(Pose{5.0, 0.0, 0.0}, Rectangle{2.0, 2.0}));
+        const DistanceSensor sensor(5.0, 10.0, Pose{}, pi / 2.0);
+
+        const RaycastResult detection = sensor.nearestObstacleDetected(environment, 1, Pose{});
+
+        EXPECT_FALSE(detection.object_detected);
+        EXPECT_TRUE(std::isinf(detection.distance_to_object));
+        EXPECT_EQ(detection.detection_type, DetectionType::OBJECTOUTOFRANGE);
+    }
+
+    TEST(DistanceSensorTests, SingleRayRejectsObstacleFartherThanMaxDistance){
+        Environment environment(Rectangle{100.0, 100.0});
+        environment.addObstacle(Obstacle(Pose{5.0, 0.0, 0.0}, Rectangle{2.0, 2.0}));
+        const DistanceSensor sensor(0.0, 3.0, Pose{}, pi / 2.0);
+
+        const RaycastResult detection = sensor.nearestObstacleDetected(environment, 1, Pose{});
+
+        EXPECT_FALSE(detection.object_detected);
+        EXPECT_TRUE(std::isinf(detection.distance_to_object));
+        EXPECT_EQ(detection.detection_type, DetectionType::OBJECTOUTOFRANGE);
+    }
+
+    TEST(DistanceSensorTests, ReturnsNearestObstacleRegardlessOfInsertionOrder){
+        Environment first_environment(Rectangle{100.0, 100.0});
+        first_environment.addObstacle(Obstacle(Pose{8.0, 0.0, 0.0}, Rectangle{2.0, 2.0}));
+        first_environment.addObstacle(Obstacle(Pose{5.0, 0.0, 0.0}, Rectangle{2.0, 2.0}));
+        Environment second_environment(Rectangle{100.0, 100.0});
+        second_environment.addObstacle(Obstacle(Pose{5.0, 0.0, 0.0}, Rectangle{2.0, 2.0}));
+        second_environment.addObstacle(Obstacle(Pose{8.0, 0.0, 0.0}, Rectangle{2.0, 2.0}));
+        const DistanceSensor sensor(0.0, 10.0, Pose{}, pi / 2.0);
+
+        const RaycastResult first_detection = sensor.nearestObstacleDetected(first_environment, 1, Pose{});
+        const RaycastResult second_detection = sensor.nearestObstacleDetected(second_environment, 1, Pose{});
+
+        ASSERT_TRUE(first_detection.object_detected);
+        ASSERT_TRUE(second_detection.object_detected);
+        EXPECT_NEAR(first_detection.distance_to_object, 4.0, tolerance);
+        EXPECT_NEAR(second_detection.distance_to_object, 4.0, tolerance);
+    }
+
+    TEST(DistanceSensorTests, TooCloseObstacleBlocksFartherObstacleOnSameRay){
+        Environment environment(Rectangle{100.0, 100.0});
+        environment.addObstacle(Obstacle(Pose{2.0, 0.0, 0.0}, Rectangle{2.0, 2.0}));
+        environment.addObstacle(Obstacle(Pose{6.0, 0.0, 0.0}, Rectangle{2.0, 2.0}));
+        const DistanceSensor sensor(2.0, 10.0, Pose{}, pi / 2.0);
+
+        const RaycastResult detection = sensor.nearestObstacleDetected(environment, 1, Pose{});
+
+        EXPECT_FALSE(detection.object_detected);
+        EXPECT_TRUE(std::isinf(detection.distance_to_object));
+        EXPECT_EQ(detection.detection_type, DetectionType::OBJECTOUTOFRANGE);
+    }
+
+    TEST(DistanceSensorTests, ObstacleBehindSensorDoesNotBlockFrontObstacle){
+        Environment environment(Rectangle{100.0, 100.0});
+        environment.addObstacle(Obstacle(Pose{-3.0, 0.0, 0.0}, Rectangle{2.0, 2.0}));
+        environment.addObstacle(Obstacle(Pose{5.0, 0.0, 0.0}, Rectangle{2.0, 2.0}));
+        const DistanceSensor sensor(0.0, 10.0, Pose{}, pi / 2.0);
+
+        const RaycastResult detection = sensor.nearestObstacleDetected(environment, 1, Pose{});
+
+        EXPECT_TRUE(detection.object_detected);
+        EXPECT_NEAR(detection.distance_to_object, 4.0, tolerance);
+    }
+
+    TEST(DistanceSensorTests, RejectsZeroRayCount){
+        Environment environment(Rectangle{100.0, 100.0});
+        const DistanceSensor sensor(0.0, 10.0, Pose{}, pi / 2.0);
+
+        EXPECT_THROW(sensor.nearestObstacleDetected(environment, 0, Pose{}), std::invalid_argument);
+    }
+
+    TEST(DistanceSensorTests, RejectsNegativeRayCount){
+        Environment environment(Rectangle{100.0, 100.0});
+        const DistanceSensor sensor(0.0, 10.0, Pose{}, pi / 2.0);
+
+        EXPECT_THROW(sensor.nearestObstacleDetected(environment, -1, Pose{}), std::invalid_argument);
+    }
+
+    TEST(DistanceSensorTests, RejectsEvenRayCount){
+        Environment environment(Rectangle{100.0, 100.0});
+        environment.addObstacle(Obstacle(Pose{8.0, 0.0, 0.0}, Rectangle{0.1, 0.1}));
+        const DistanceSensor sensor(0.0, 10.0, Pose{}, pi / 2.0);
+
+        EXPECT_THROW(sensor.nearestObstacleDetected(environment, 2, Pose{}), std::invalid_argument);
+    }
+
+    TEST(DistanceSensorTests, ThreeRaysIncludeCentralDirection){
+        Environment environment(Rectangle{100.0, 100.0});
+        environment.addObstacle(Obstacle(Pose{8.0, 0.0, 0.0}, Rectangle{0.1, 0.1}));
+        const DistanceSensor sensor(0.0, 10.0, Pose{}, pi / 2.0);
+
+        const RaycastResult detection = sensor.nearestObstacleDetected(environment, 3, Pose{});
+
+        EXPECT_TRUE(detection.object_detected);
+        EXPECT_NEAR(detection.distance_to_object, 7.95, tolerance);
+    }
+
+    TEST(DistanceSensorTests, DetectsObstacleAtLeftFieldOfViewBoundary){
+        Environment environment(Rectangle{100.0, 100.0});
+        const double coordinate = 5.0 / std::sqrt(2.0);
+        environment.addObstacle(Obstacle(Pose{coordinate, -coordinate, 0.0}, Rectangle{0.2, 0.2}));
+        const DistanceSensor sensor(0.0, 10.0, Pose{}, pi / 2.0);
+
+        const RaycastResult detection = sensor.nearestObstacleDetected(environment, 3, Pose{});
+
+        EXPECT_TRUE(detection.object_detected);
+    }
+
+    TEST(DistanceSensorTests, DetectsObstacleAtRightFieldOfViewBoundary){
+        Environment environment(Rectangle{100.0, 100.0});
+        const double coordinate = 5.0 / std::sqrt(2.0);
+        environment.addObstacle(Obstacle(Pose{coordinate, coordinate, 0.0}, Rectangle{0.2, 0.2}));
+        const DistanceSensor sensor(0.0, 10.0, Pose{}, pi / 2.0);
+
+        const RaycastResult detection = sensor.nearestObstacleDetected(environment, 3, Pose{});
+
+        EXPECT_TRUE(detection.object_detected);
+    }
+
+    TEST(DistanceSensorTests, DoesNotDetectSmallObstacleOutsideFieldOfView){
+        Environment environment(Rectangle{100.0, 100.0});
+        const double angle = pi / 3.0;
+        environment.addObstacle(Obstacle(
+            Pose{5.0 * std::cos(angle), 5.0 * std::sin(angle), 0.0}, Rectangle{0.1, 0.1}));
+        const DistanceSensor sensor(0.0, 10.0, Pose{}, pi / 2.0);
+
+        const RaycastResult detection = sensor.nearestObstacleDetected(environment, 31, Pose{});
+
+        EXPECT_FALSE(detection.object_detected);
+        EXPECT_EQ(detection.detection_type, DetectionType::NOOBJECTDETECTED);
+    }
+
+    TEST(DistanceSensorTests, ReturnsNearestDetectionFromDifferentRays){
+        Environment environment(Rectangle{100.0, 100.0});
+        const double coordinate = 4.0 / std::sqrt(2.0);
+        environment.addObstacle(Obstacle(Pose{6.0, 0.0, 0.0}, Rectangle{0.2, 0.2}));
+        environment.addObstacle(Obstacle(Pose{coordinate, coordinate, 0.0}, Rectangle{0.2, 0.2}));
+        const DistanceSensor sensor(0.0, 10.0, Pose{}, pi / 2.0);
+
+        const RaycastResult detection = sensor.nearestObstacleDetected(environment, 3, Pose{});
+
+        EXPECT_TRUE(detection.object_detected);
+        EXPECT_NEAR(detection.distance_to_object, 4.0 - 0.1 * std::sqrt(2.0), tolerance);
+        EXPECT_EQ(detection.detection_type, DetectionType::OBJECTDETECTED);
+    }
+
+    TEST(DistanceSensorTests, TooCloseEchoAnywhereInFieldOfViewSuppressesFartherDetection){
+        Environment environment(Rectangle{100.0, 100.0});
+        const double close_coordinate = 1.5 / std::sqrt(2.0);
+        environment.addObstacle(Obstacle(
+            Pose{close_coordinate, -close_coordinate, 0.0}, Rectangle{0.2, 0.2}));
+        environment.addObstacle(Obstacle(Pose{5.0, 0.0, 0.0}, Rectangle{0.2, 0.2}));
+        const DistanceSensor sensor(2.0, 10.0, Pose{}, pi / 2.0);
+
+        const RaycastResult detection = sensor.nearestObstacleDetected(environment, 3, Pose{});
+
+        EXPECT_FALSE(detection.object_detected);
+        EXPECT_TRUE(std::isinf(detection.distance_to_object));
+        EXPECT_EQ(detection.detection_type, DetectionType::OBJECTOUTOFRANGE);
+    }
+
+    TEST(DistanceSensorTests, UsesRobotPoseAndRelativeSensorPoseDuringScan){
+        Environment environment(Rectangle{100.0, 100.0});
+        environment.addObstacle(Obstacle(Pose{10.0, 11.0, 0.0}, Rectangle{2.0, 2.0}));
+        const DistanceSensor sensor(0.0, 10.0, Pose{1.0, 0.0, 0.0}, pi / 2.0);
+        const Pose robot_pose {10.0, 5.0, pi / 2.0};
+
+        const RaycastResult detection = sensor.nearestObstacleDetected(environment, 1, robot_pose);
+
+        EXPECT_TRUE(detection.object_detected);
+        EXPECT_NEAR(detection.distance_to_object, 4.0, tolerance);
+    }
+
+}//namespace robot_simulation

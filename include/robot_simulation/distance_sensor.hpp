@@ -3,6 +3,8 @@
 
 namespace robot_simulation{
 
+    class Environment;
+
     enum class DetectionType {
         OBJECTDETECTED,
         OBJECTOUTOFRANGE,
@@ -34,5 +36,8 @@ class DistanceSensor{
         const Pose getRelativeToRobotPose () const {return relativeToRobotPose_;}
 
         Pose getWorldPose (const Pose& robot_pose) const;
+
+        RaycastResult nearestObstacleDetected (const Environment& environment,
+            int ray_count, const Pose& robot_pose) const;
     };
 }
