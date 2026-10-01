@@ -1,5 +1,6 @@
 #pragma once
 #include <robot_simulation/types.hpp>
+#include <robot_simulation/distance_sensor.hpp>
 #include <vector>
 
 namespace robot_simulation{
@@ -14,6 +15,8 @@ namespace robot_simulation{
         Rectangle size_;
 
         std::vector<Pose> trajectory_;
+
+        std::vector<DistanceSensor> distance_sensors_;
 
         void addPointToTrajectory(Pose pose) {trajectory_.push_back(pose);}
 
@@ -38,5 +41,10 @@ namespace robot_simulation{
         Pose robotNextPose(double dt) const;
 
         void setVelocity(double linear_velocity, double angular_velocity);
+
+        const std::vector<DistanceSensor>& getDistanceSensors() const {return distance_sensors_;}
+
+        void addDistanceSensor (DistanceSensor distance_sensor)
+            {distance_sensors_.push_back(distance_sensor);}
     };
 }// namespace robot_simulation

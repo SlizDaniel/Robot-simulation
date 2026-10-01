@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <robot_simulation/distance_sensor.hpp>
 #include <robot_simulation/robot.hpp>
 #include <robot_simulation/types.hpp>
 #include "helpers.hpp"
@@ -241,5 +242,27 @@ namespace robot_simulation{
         EXPECT_NEAR(actual_pose.x, 2.0, tolerance);
         EXPECT_NEAR(actual_pose.y, 0.0, tolerance);
         EXPECT_NEAR(actual_pose.theta, 0.0, tolerance);
+    }
+
+    TEST(RobotTests, StartsWithoutDistanceSensors){
+        const Robot robot(Pose{}, Velocity{}, Rectangle{2.0, 4.0});
+
+        EXPECT_TRUE(robot.getDistanceSensors().empty());
+    }
+
+    TEST(RobotTests, AddsDistanceSensorAndPreservesConfiguration){
+        Robot robot(Pose{}, Velocity{}, Rectangle{2.0, 4.0});
+        const Pose relative_pose {1.0, 0.5, pi / 4.0};
+        const DistanceSensor sensor(0.5, 10.0, relative_pose, pi / 3.0);
+
+        robot.addDistanceSensor(sensor);
+        const std::vector<DistanceSensor>& sensors = robot.getDistanceSensors();
+
+        ASSERT_EQ(sensors.size(), 1U);
+        EXPECT_DOUBLE_EQ(sensors[0].getSensorMinDistance(), 0.5);
+        EXPECT_DOUBLE_EQ(sensors[0].getSensorMaxDistance(), 10.0);
+        EXPECT_DOUBLE_EQ(sensors[0].getRelativeToRobotPose().x, relative_pose.x);
+        EXPECT_DOUBLE_EQ(sensors[0].getRelativeToRobotPose().y, relative_pose.y);
+        EXPECT_DOUBLE_EQ(sensors[0].getRelativeToRobotPose().theta, relative_pose.theta);
     }
 }
