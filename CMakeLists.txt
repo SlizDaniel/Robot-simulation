@@ -15,6 +15,7 @@ add_library(robot_simulator
     src/simulation.cpp
     src/geometry.cpp
     src/obstacle.cpp
+    src/distance_sensor.cpp
 )
 
 target_include_directories(robot_simulator
@@ -51,6 +52,7 @@ add_executable(robot_simulator_tests
     tests/robot_tests.cpp
     tests/obstacle_tests.cpp
     tests/environment_tests.cpp
+    tests/distance_sensor_tests.cpp
     tests/simulation_tests.cpp)
 
 target_link_libraries(robot_simulator_tests
