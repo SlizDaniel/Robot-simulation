@@ -1,8 +1,12 @@
 #include <gtest/gtest.h>
 #include <robot_simulation/geometry.hpp>
+#include <robot_simulation/distance_sensor.hpp>
+#include <robot_simulation/obstacle.hpp>
 #include <robot_simulation/types.hpp>
 #include "helpers.hpp"
 #include <robot_simulation/math_constans.hpp>
+#include <array>
+#include <cmath>
 
 namespace robot_simulation{
     TEST (GeometryTest, CalculateCornersWithoutRotation){
@@ -87,5 +91,173 @@ namespace robot_simulation{
             Point{-1.0,  1.0}
         };
         expectCornersNear(corners, expected, tolerance);
+    }
+
+    TEST(GeometryTest, RaycastDetectsObstacleToTheRight){
+        const Obstacle obstacle(Pose{5.0, 0.0, 0.0}, Rectangle{2.0, 2.0});
+        const std::array<double, 2> range {0.0, 10.0};
+
+        const RaycastResult result = calculateDistanceSensorObstacle(Pose{0.0, 0.0, 0.0}, range, obstacle);
+
+        EXPECT_TRUE(result.object_detected);
+        EXPECT_NEAR(result.distance_to_object, 4.0, tolerance);
+        EXPECT_EQ(result.detection_type, DetectionType::OBJECTDETECTED);
+    }
+
+    TEST(GeometryTest, RaycastDetectsObstacleAbove){
+        const Obstacle obstacle(Pose{0.0, 5.0, 0.0}, Rectangle{2.0, 2.0});
+        const std::array<double, 2> range {0.0, 10.0};
+
+        const RaycastResult result = calculateDistanceSensorObstacle(Pose{0.0, 0.0, pi / 2.0}, range, obstacle);
+
+        EXPECT_TRUE(result.object_detected);
+        EXPECT_NEAR(result.distance_to_object, 4.0, tolerance);
+        EXPECT_EQ(result.detection_type, DetectionType::OBJECTDETECTED);
+    }
+
+    TEST(GeometryTest, RaycastDetectsObstacleToTheLeft){
+        const Obstacle obstacle(Pose{-5.0, 0.0, 0.0}, Rectangle{2.0, 2.0});
+        const std::array<double, 2> range {0.0, 10.0};
+
+        const RaycastResult result = calculateDistanceSensorObstacle(Pose{0.0, 0.0, pi}, range, obstacle);
+
+        EXPECT_TRUE(result.object_detected);
+        EXPECT_NEAR(result.distance_to_object, 4.0, tolerance);
+        EXPECT_EQ(result.detection_type, DetectionType::OBJECTDETECTED);
+    }
+
+    TEST(GeometryTest, RaycastDetectsObstacleBelow){
+        const Obstacle obstacle(Pose{0.0, -5.0, 0.0}, Rectangle{2.0, 2.0});
+        const std::array<double, 2> range {0.0, 10.0};
+
+        const RaycastResult result = calculateDistanceSensorObstacle(Pose{0.0, 0.0, -pi / 2.0}, range, obstacle);
+
+        EXPECT_TRUE(result.object_detected);
+        EXPECT_NEAR(result.distance_to_object, 4.0, tolerance);
+        EXPECT_EQ(result.detection_type, DetectionType::OBJECTDETECTED);
+    }
+
+    TEST(GeometryTest, RaycastUsesObstacleLengthAlongLocalXAxis){
+        const Obstacle obstacle(Pose{5.0, 0.0, 0.0}, Rectangle{2.0, 4.0});
+        const std::array<double, 2> range {0.0, 10.0};
+
+        const RaycastResult result = calculateDistanceSensorObstacle(Pose{0.0, 0.0, 0.0}, range, obstacle);
+
+        EXPECT_TRUE(result.object_detected);
+        EXPECT_NEAR(result.distance_to_object, 3.0, tolerance);
+    }
+
+    TEST(GeometryTest, RaycastDetectsDiagonalObstacle){
+        const Obstacle obstacle(Pose{5.0, 5.0, 0.0}, Rectangle{2.0, 2.0});
+        const std::array<double, 2> range {0.0, 10.0};
+
+        const RaycastResult result = calculateDistanceSensorObstacle(Pose{0.0, 0.0, pi / 4.0}, range, obstacle);
+
+        EXPECT_TRUE(result.object_detected);
+        EXPECT_NEAR(result.distance_to_object, 4.0 * std::sqrt(2.0), tolerance);
+    }
+
+    TEST(GeometryTest, RaycastDoesNotDetectObstacleNextToRay){
+        const Obstacle obstacle(Pose{5.0, 3.0, 0.0}, Rectangle{2.0, 2.0});
+        const std::array<double, 2> range {0.0, 10.0};
+
+        const RaycastResult result = calculateDistanceSensorObstacle(Pose{0.0, 0.0, 0.0}, range, obstacle);
+
+        EXPECT_FALSE(result.object_detected);
+        EXPECT_TRUE(std::isinf(result.distance_to_object));
+        EXPECT_EQ(result.detection_type, DetectionType::NOOBJECTDETECTED);
+    }
+
+    TEST(GeometryTest, RaycastDoesNotDetectObstacleBehindHorizontalRay){
+        const Obstacle obstacle(Pose{-5.0, 0.0, 0.0}, Rectangle{2.0, 2.0});
+        const std::array<double, 2> range {0.0, 10.0};
+
+        const RaycastResult result = calculateDistanceSensorObstacle(Pose{0.0, 0.0, 0.0}, range, obstacle);
+
+        EXPECT_FALSE(result.object_detected);
+        EXPECT_TRUE(std::isinf(result.distance_to_object));
+    }
+
+    TEST(GeometryTest, RaycastDoesNotDetectObstacleBehindVerticalRay){
+        const Obstacle obstacle(Pose{0.0, -5.0, 0.0}, Rectangle{2.0, 2.0});
+        const std::array<double, 2> range {0.0, 10.0};
+
+        const RaycastResult result = calculateDistanceSensorObstacle(Pose{0.0, 0.0, pi / 2.0}, range, obstacle);
+
+        EXPECT_FALSE(result.object_detected);
+        EXPECT_TRUE(std::isinf(result.distance_to_object));
+    }
+
+    TEST(GeometryTest, RaycastDetectsRotatedObstacle){
+        const Obstacle obstacle(Pose{5.0, 0.0, pi / 4.0}, Rectangle{2.0, 2.0});
+        const std::array<double, 2> range {0.0, 10.0};
+
+        const RaycastResult result = calculateDistanceSensorObstacle(Pose{0.0, 0.0, 0.0}, range, obstacle);
+
+        EXPECT_TRUE(result.object_detected);
+        EXPECT_NEAR(result.distance_to_object, 5.0 - std::sqrt(2.0), tolerance);
+    }
+
+    TEST(GeometryTest, RaycastTreatsTangentialContactAsDetection){
+        const Obstacle obstacle(Pose{5.0, 1.0, 0.0}, Rectangle{2.0, 2.0});
+        const std::array<double, 2> range {0.0, 10.0};
+
+        const RaycastResult result = calculateDistanceSensorObstacle(Pose{0.0, 0.0, 0.0}, range, obstacle);
+
+        EXPECT_TRUE(result.object_detected);
+        EXPECT_NEAR(result.distance_to_object, 4.0, tolerance);
+    }
+
+    TEST(GeometryTest, RaycastDetectsObstacleExactlyAtMinDistance){
+        const Obstacle obstacle(Pose{5.0, 0.0, 0.0}, Rectangle{2.0, 2.0});
+        const std::array<double, 2> range {4.0, 10.0};
+
+        const RaycastResult result = calculateDistanceSensorObstacle(Pose{0.0, 0.0, 0.0}, range, obstacle);
+
+        EXPECT_TRUE(result.object_detected);
+        EXPECT_NEAR(result.distance_to_object, 4.0, tolerance);
+    }
+
+    TEST(GeometryTest, RaycastDetectsObstacleExactlyAtMaxDistance){
+        const Obstacle obstacle(Pose{5.0, 0.0, 0.0}, Rectangle{2.0, 2.0});
+        const std::array<double, 2> range {0.0, 4.0};
+
+        const RaycastResult result = calculateDistanceSensorObstacle(Pose{0.0, 0.0, 0.0}, range, obstacle);
+
+        EXPECT_TRUE(result.object_detected);
+        EXPECT_NEAR(result.distance_to_object, 4.0, tolerance);
+    }
+
+    TEST(GeometryTest, RaycastReportsObstacleCloserThanMinDistance){
+        const Obstacle obstacle(Pose{5.0, 0.0, 0.0}, Rectangle{2.0, 2.0});
+        const std::array<double, 2> range {5.0, 10.0};
+
+        const RaycastResult result = calculateDistanceSensorObstacle(Pose{0.0, 0.0, 0.0}, range, obstacle);
+
+        EXPECT_FALSE(result.object_detected);
+        EXPECT_NEAR(result.distance_to_object, 4.0, tolerance);
+        EXPECT_EQ(result.detection_type, DetectionType::OBJECTOUTOFRANGE);
+    }
+
+    TEST(GeometryTest, RaycastReportsObstacleFartherThanMaxDistance){
+        const Obstacle obstacle(Pose{5.0, 0.0, 0.0}, Rectangle{2.0, 2.0});
+        const std::array<double, 2> range {0.0, 3.0};
+
+        const RaycastResult result = calculateDistanceSensorObstacle(Pose{0.0, 0.0, 0.0}, range, obstacle);
+
+        EXPECT_FALSE(result.object_detected);
+        EXPECT_NEAR(result.distance_to_object, 4.0, tolerance);
+        EXPECT_EQ(result.detection_type, DetectionType::OBJECTOUTOFRANGE);
+    }
+
+    TEST(GeometryTest, RaycastReportsSensorInsideObstacleAsOutOfRange){
+        const Obstacle obstacle(Pose{0.0, 0.0, 0.0}, Rectangle{2.0, 2.0});
+        const std::array<double, 2> range {0.0, 10.0};
+
+        const RaycastResult result = calculateDistanceSensorObstacle(Pose{0.0, 0.0, 0.0}, range, obstacle);
+
+        EXPECT_FALSE(result.object_detected);
+        EXPECT_TRUE(std::isinf(result.distance_to_object));
+        EXPECT_EQ(result.detection_type, DetectionType::OBJECTOUTOFRANGE);
     }
 }//robot_simulation

@@ -3,6 +3,18 @@
 
 namespace robot_simulation{
 
+    enum class DetectionType {
+        OBJECTDETECTED,
+        OBJECTOUTOFRANGE,
+        NOOBJECTDETECTED
+    };
+
+    struct RaycastResult {
+        bool object_detected;
+        double distance_to_object;
+        DetectionType detection_type;
+    };
+
 class DistanceSensor{
         private:
         double max_distance_;
