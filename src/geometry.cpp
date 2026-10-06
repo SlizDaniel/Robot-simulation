@@ -2,6 +2,8 @@
 #include <robot_simulation/types.hpp>
 #include <cmath>
 #include <array>
+#include <stdexcept>
+#include <algorithm>
 #include <robot_simulation/math_constans.hpp>
 
 namespace robot_simulation{
@@ -129,4 +131,53 @@ namespace robot_simulation{
             }
         return {true, t_collision, DetectionType::OBJECTDETECTED};
     }
+    
+    RaycastResult calculateDistanceSensorEnvironment (const Pose& distance_sensor_pose,
+        const std::array<double,2>& min_max_sensor_distance, const Rectangle& environment_size){
+        if (distance_sensor_pose.x > environment_size.length / 2 || 
+            distance_sensor_pose.x < -environment_size.length / 2 ||
+            distance_sensor_pose.y > environment_size.width / 2 ||
+            distance_sensor_pose.y < -environment_size.width / 2){
+                throw std::invalid_argument("Sensor not inside simulation environment");
+            }
+        double direction_x = std::cos(distance_sensor_pose.theta);
+        double direction_y = std::sin(distance_sensor_pose.theta);
+        double t_collision = 0.0;
+        if (std::abs(direction_x) < epsilon){
+            if (direction_y > 0){
+                t_collision = ((environment_size.width / 2) - distance_sensor_pose.y) / direction_y;
+            }
+            else {
+                t_collision = (-(environment_size.width / 2) - distance_sensor_pose.y) / direction_y;}
+        }
+        else if (std::abs(direction_y) < epsilon){
+            if (direction_x > 0){
+                t_collision = ((environment_size.length / 2) - distance_sensor_pose.x) / direction_x;
+            }
+            else {
+                t_collision = (-(environment_size.length / 2) - distance_sensor_pose.x) / direction_x;}
+        }
+        else{
+            double t_x_right = ((environment_size.length / 2) - distance_sensor_pose.x) / direction_x;
+            double t_x_left = (-(environment_size.length / 2) - distance_sensor_pose.x) / direction_x;
+            double t_y_top = ((environment_size.width / 2) - distance_sensor_pose.y) / direction_y;
+            double t_x = 0.0;
+            double t_y = 0.0;
+            double t_y_bottom = (-(environment_size.width / 2) - distance_sensor_pose.y) / direction_y;
+            if (t_x_right > t_x_left){
+                t_x = t_x_right;
+            }
+            else {t_x = t_x_left;}
+            if (t_y_top > t_y_bottom){
+                t_y = t_y_top;
+            }
+            else{t_y = t_y_bottom;}
+
+            t_collision = std::min(t_y, t_x);
+        }
+        if (t_collision >= min_max_sensor_distance[0] && t_collision <= min_max_sensor_distance[1]){
+            return {true, t_collision, DetectionType::OBJECTDETECTED};
+        }
+        return {false, t_collision, DetectionType::OBJECTOUTOFRANGE};
+    };
 }//robot_simulation
