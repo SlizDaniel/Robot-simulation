@@ -7,6 +7,7 @@
 #include <robot_simulation/math_constans.hpp>
 #include <array>
 #include <cmath>
+#include <stdexcept>
 
 namespace robot_simulation{
     TEST (GeometryTest, CalculateCornersWithoutRotation){
@@ -259,5 +260,177 @@ namespace robot_simulation{
         EXPECT_FALSE(result.object_detected);
         EXPECT_TRUE(std::isinf(result.distance_to_object));
         EXPECT_EQ(result.detection_type, DetectionType::OBJECTOUTOFRANGE);
+    }
+
+    TEST(GeometryTest, RaycastDetectsEnvironmentBorderToTheRight){
+        const Rectangle environment_size {10.0, 20.0};
+        const std::array<double, 2> range {0.0, 20.0};
+
+        const RaycastResult result = calculateDistanceSensorEnvironment(
+            Pose{0.0, 0.0, 0.0}, range, environment_size);
+
+        EXPECT_TRUE(result.object_detected);
+        EXPECT_NEAR(result.distance_to_object, 10.0, tolerance);
+        EXPECT_EQ(result.detection_type, DetectionType::OBJECTDETECTED);
+    }
+
+    TEST(GeometryTest, RaycastDetectsEnvironmentBorderToTheLeft){
+        const Rectangle environment_size {10.0, 20.0};
+        const std::array<double, 2> range {0.0, 20.0};
+
+        const RaycastResult result = calculateDistanceSensorEnvironment(
+            Pose{0.0, 0.0, pi}, range, environment_size);
+
+        EXPECT_TRUE(result.object_detected);
+        EXPECT_NEAR(result.distance_to_object, 10.0, tolerance);
+        EXPECT_EQ(result.detection_type, DetectionType::OBJECTDETECTED);
+    }
+
+    TEST(GeometryTest, RaycastDetectsEnvironmentBorderAbove){
+        const Rectangle environment_size {10.0, 20.0};
+        const std::array<double, 2> range {0.0, 20.0};
+
+        const RaycastResult result = calculateDistanceSensorEnvironment(
+            Pose{0.0, 0.0, pi / 2.0}, range, environment_size);
+
+        EXPECT_TRUE(result.object_detected);
+        EXPECT_NEAR(result.distance_to_object, 5.0, tolerance);
+        EXPECT_EQ(result.detection_type, DetectionType::OBJECTDETECTED);
+    }
+
+    TEST(GeometryTest, RaycastDetectsEnvironmentBorderBelow){
+        const Rectangle environment_size {10.0, 20.0};
+        const std::array<double, 2> range {0.0, 20.0};
+
+        const RaycastResult result = calculateDistanceSensorEnvironment(
+            Pose{0.0, 0.0, -pi / 2.0}, range, environment_size);
+
+        EXPECT_TRUE(result.object_detected);
+        EXPECT_NEAR(result.distance_to_object, 5.0, tolerance);
+        EXPECT_EQ(result.detection_type, DetectionType::OBJECTDETECTED);
+    }
+
+    TEST(GeometryTest, RaycastDetectsEnvironmentBorderAlongDiagonal){
+        const Rectangle environment_size {10.0, 20.0};
+        const std::array<double, 2> range {0.0, 20.0};
+
+        const RaycastResult result = calculateDistanceSensorEnvironment(
+            Pose{0.0, 0.0, pi / 4.0}, range, environment_size);
+
+        EXPECT_TRUE(result.object_detected);
+        EXPECT_NEAR(result.distance_to_object, 5.0 * std::sqrt(2.0), tolerance);
+        EXPECT_EQ(result.detection_type, DetectionType::OBJECTDETECTED);
+    }
+
+    TEST(GeometryTest, RaycastDetectsNearestEnvironmentBorderFromOffCenterDiagonal){
+        const Rectangle environment_size {10.0, 20.0};
+        const std::array<double, 2> range {0.0, 20.0};
+
+        const RaycastResult result = calculateDistanceSensorEnvironment(
+            Pose{4.0, 4.0, 3.0 * pi / 4.0}, range, environment_size);
+
+        EXPECT_TRUE(result.object_detected);
+        EXPECT_NEAR(result.distance_to_object, std::sqrt(2.0), tolerance);
+        EXPECT_EQ(result.detection_type, DetectionType::OBJECTDETECTED);
+    }
+
+    TEST(GeometryTest, RaycastMeasuresEnvironmentBorderFromSensorPosition){
+        const Rectangle environment_size {10.0, 20.0};
+        const std::array<double, 2> range {0.0, 20.0};
+
+        const RaycastResult result = calculateDistanceSensorEnvironment(
+            Pose{8.0, 4.0, 0.0}, range, environment_size);
+
+        EXPECT_TRUE(result.object_detected);
+        EXPECT_NEAR(result.distance_to_object, 2.0, tolerance);
+        EXPECT_EQ(result.detection_type, DetectionType::OBJECTDETECTED);
+    }
+
+    TEST(GeometryTest, RaycastDetectsEnvironmentBorderExactlyAtMinDistance){
+        const Rectangle environment_size {10.0, 20.0};
+        const std::array<double, 2> range {10.0, 20.0};
+
+        const RaycastResult result = calculateDistanceSensorEnvironment(
+            Pose{0.0, 0.0, 0.0}, range, environment_size);
+
+        EXPECT_TRUE(result.object_detected);
+        EXPECT_NEAR(result.distance_to_object, 10.0, tolerance);
+        EXPECT_EQ(result.detection_type, DetectionType::OBJECTDETECTED);
+    }
+
+    TEST(GeometryTest, RaycastDetectsEnvironmentBorderExactlyAtMaxDistance){
+        const Rectangle environment_size {10.0, 20.0};
+        const std::array<double, 2> range {0.0, 10.0};
+
+        const RaycastResult result = calculateDistanceSensorEnvironment(
+            Pose{0.0, 0.0, 0.0}, range, environment_size);
+
+        EXPECT_TRUE(result.object_detected);
+        EXPECT_NEAR(result.distance_to_object, 10.0, tolerance);
+        EXPECT_EQ(result.detection_type, DetectionType::OBJECTDETECTED);
+    }
+
+    TEST(GeometryTest, RaycastReportsEnvironmentBorderCloserThanMinDistance){
+        const Rectangle environment_size {10.0, 20.0};
+        const std::array<double, 2> range {11.0, 20.0};
+
+        const RaycastResult result = calculateDistanceSensorEnvironment(
+            Pose{0.0, 0.0, 0.0}, range, environment_size);
+
+        EXPECT_FALSE(result.object_detected);
+        EXPECT_NEAR(result.distance_to_object, 10.0, tolerance);
+        EXPECT_EQ(result.detection_type, DetectionType::OBJECTOUTOFRANGE);
+    }
+
+    TEST(GeometryTest, RaycastReportsEnvironmentBorderFartherThanMaxDistance){
+        const Rectangle environment_size {10.0, 20.0};
+        const std::array<double, 2> range {0.0, 9.0};
+
+        const RaycastResult result = calculateDistanceSensorEnvironment(
+            Pose{0.0, 0.0, 0.0}, range, environment_size);
+
+        EXPECT_FALSE(result.object_detected);
+        EXPECT_NEAR(result.distance_to_object, 10.0, tolerance);
+        EXPECT_EQ(result.detection_type, DetectionType::OBJECTOUTOFRANGE);
+    }
+
+    TEST(GeometryTest, RaycastDetectsEnvironmentBorderAtSensorPosition){
+        const Rectangle environment_size {10.0, 20.0};
+        const std::array<double, 2> range {0.0, 20.0};
+
+        const RaycastResult result = calculateDistanceSensorEnvironment(
+            Pose{10.0, 0.0, 0.0}, range, environment_size);
+
+        EXPECT_TRUE(result.object_detected);
+        EXPECT_NEAR(result.distance_to_object, 0.0, tolerance);
+        EXPECT_EQ(result.detection_type, DetectionType::OBJECTDETECTED);
+    }
+
+    TEST(GeometryTest, RaycastDetectsOppositeEnvironmentBorderFromBoundary){
+        const Rectangle environment_size {10.0, 20.0};
+        const std::array<double, 2> range {0.0, 20.0};
+
+        const RaycastResult result = calculateDistanceSensorEnvironment(
+            Pose{10.0, 0.0, pi}, range, environment_size);
+
+        EXPECT_TRUE(result.object_detected);
+        EXPECT_NEAR(result.distance_to_object, 20.0, tolerance);
+        EXPECT_EQ(result.detection_type, DetectionType::OBJECTDETECTED);
+    }
+
+    TEST(GeometryTest, RaycastRejectsSensorOutsideEnvironment){
+        const Rectangle environment_size {10.0, 20.0};
+        const std::array<double, 2> range {0.0, 20.0};
+
+        EXPECT_THROW(calculateDistanceSensorEnvironment(
+            Pose{10.1, 0.0, 0.0}, range, environment_size), std::invalid_argument);
+    }
+
+    TEST(GeometryTest, RaycastRejectsSensorAboveEnvironment){
+        const Rectangle environment_size {10.0, 20.0};
+        const std::array<double, 2> range {0.0, 20.0};
+
+        EXPECT_THROW(calculateDistanceSensorEnvironment(
+            Pose{0.0, 5.1, 0.0}, range, environment_size), std::invalid_argument);
     }
 }//robot_simulation

@@ -9,4 +9,7 @@ namespace robot_simulation{
 
     RaycastResult calculateDistanceSensorObstacle (const Pose& distance_sensor_pose,
             const std::array<double,2>& min_max_sensor_distance, const Obstacle& obstacle);
+
+    RaycastResult calculateDistanceSensorEnvironment (const Pose& distance_sensor_pose,
+            const std::array<double,2>& min_max_sensor_distance, const Rectangle& environment_size);
 }

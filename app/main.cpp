@@ -1,4 +1,6 @@
+#include <robot_simulation/distance_sensor.hpp>
 #include <robot_simulation/environment.hpp>
+#include <robot_simulation/math_constans.hpp>
 #include <robot_simulation/obstacle.hpp>
 #include <robot_simulation/robot.hpp>
 #include <robot_simulation/simulation.hpp>
@@ -11,8 +13,14 @@
 
 namespace {
     using robot_simulation::Pose;
+    using robot_simulation::DetectionType;
+    using robot_simulation::DistanceSensor;
+    using robot_simulation::Environment;
+    using robot_simulation::RaycastResult;
+    using robot_simulation::Robot;
     using robot_simulation::Simulation;
     using robot_simulation::SimulationResult;
+    using robot_simulation::SimulationUpdate;
     using robot_simulation::StopReason;
 
     constexpr int separator_width = 64;
@@ -25,6 +33,18 @@ namespace {
                 return "out of environment";
             case StopReason::ObstacleCollision:
                 return "obstacle collision";
+        }
+        return "unknown";
+    }
+
+    std::string detectionTypeToString(DetectionType type){
+        switch(type){
+            case DetectionType::OBJECTDETECTED:
+                return "detected";
+            case DetectionType::OBJECTOUTOFRANGE:
+                return "out of range";
+            case DetectionType::NOOBJECTDETECTED:
+                return "no object";
         }
         return "unknown";
     }
@@ -63,6 +83,52 @@ namespace {
         printPose("Robot pose", pose);
     }
 
+    void printRaycastResult(
+        std::size_t attempt,
+        std::size_t simulation_step,
+        double time,
+        const SimulationUpdate& update,
+        const RaycastResult& result
+    ){
+        std::cout << std::left
+                  << std::setw(10) << "Attempt"
+                  << std::right << std::setw(3) << attempt
+                  << "  |  Step " << std::setw(3) << simulation_step
+                  << std::setw(12) << time << " s"
+                  << "  |  " << std::left << std::setw(8)
+                  << (update.step_accepted ? "accepted" : "rejected")
+                  << "  |  Raycast: " << std::setw(13)
+                  << detectionTypeToString(result.detection_type);
+
+        if (result.detection_type != DetectionType::NOOBJECTDETECTED){
+            std::cout << "  nearest echo = " << std::right
+                      << std::setw(6) << result.distance_to_object;
+        }
+        std::cout << '\n';
+    }
+
+    SimulationResult runPhaseWithRaycasts(
+        std::size_t step_count,
+        Simulation& simulation
+    ){
+        for(std::size_t step = 0; step < step_count; ++step){
+            const SimulationUpdate update = simulation.update();
+            for(const RaycastResult& result : update.raycast_results){
+                printRaycastResult(
+                    step + 1,
+                    simulation.getSimulationStep(),
+                    simulation.getSimulationTime(),
+                    update,
+                    result);
+            }
+
+            if (!update.step_accepted){
+                return {step, false, update.stop_reason};
+            }
+        }
+        return {step_count, true, StopReason::None};
+    }
+
     void printTrajectory(const std::vector<Pose>& trajectory, double step_time){
         printSeparator();
         std::cout << "TRAJECTORY HISTORY\n";
@@ -90,6 +156,7 @@ int main(){
     using namespace robot_simulation;
 
     constexpr double step_time = 0.5;
+    constexpr int ray_count = 3;
     const Rectangle environment_size {12.0, 30.0};
     const Rectangle robot_size {1.5, 2.0};
     const Rectangle obstacle_size {4.0, 2.0};
@@ -105,11 +172,13 @@ int main(){
         Velocity{2.0, 0.25},
         robot_size
     );
-    Simulation simulation(step_time, robot, environment);
+    const DistanceSensor sensor(0.2, 15.0, Pose{1.0, 0.0, 0.0}, pi / 2.0);
+    robot.addDistanceSensor(sensor);
+    Simulation simulation(step_time, robot, environment, ray_count);
 
     std::cout << std::fixed << std::setprecision(2);
     printSeparator('=');
-    std::cout << "                 ROBOT SIMULATOR v0.2 DEMO\n";
+    std::cout << "                 ROBOT SIMULATOR v0.3 DEMO\n";
     printSeparator('=');
     std::cout << std::left
               << std::setw(22) << "Environment"
@@ -119,10 +188,18 @@ int main(){
               << std::setw(22) << "Obstacle position"
               << "x = 8.00, y = 0.00\n"
               << std::setw(22) << "Simulation step"
-              << step_time << " s\n";
+              << step_time << " s\n"
+              << std::setw(22) << "Distance sensors"
+              << robot.getDistanceSensors().size() << "\n"
+              << std::setw(22) << "Raycast rays"
+              << ray_count << "\n";
     printPose("Initial robot pose", robot.getPose());
+    printSeparator();
+    std::cout << "RAYCAST MEASUREMENTS\n";
+    printSeparator();
 
-    const SimulationResult first_phase = simulation.runSteps(4);
+    const SimulationResult first_phase = runPhaseWithRaycasts(
+        4, simulation);
     printPhaseResult(
         "PHASE 1: linear 2.00, angular 0.25 rad/s",
         first_phase,
@@ -131,7 +208,8 @@ int main(){
     );
 
     robot.setVelocity(4.0, 0.15);
-    const SimulationResult second_phase = simulation.runSteps(10);
+    const SimulationResult second_phase = runPhaseWithRaycasts(
+        10, simulation);
     printPhaseResult(
         "PHASE 2: linear 4.00, angular 0.15 rad/s",
         second_phase,

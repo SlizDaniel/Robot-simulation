@@ -39,5 +39,11 @@ class DistanceSensor{
 
         RaycastResult nearestObstacleDetected (const Environment& environment,
             int ray_count, const Pose& robot_pose) const;
+
+        RaycastResult nearestEnvironmentBorderDetected (const Environment& environment, 
+            int ray_count, const Pose& robot_pose) const;
+
+        RaycastResult nearestObjectDetected (const Environment& environment, 
+            const int ray_count, const Pose& robot_pose) const;
     };
 }
