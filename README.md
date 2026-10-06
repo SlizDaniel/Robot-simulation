@@ -2,7 +2,7 @@
 
 Prosty symulator ruchu prostokątnego robota mobilnego w środowisku 2D, napisany w C++17. Projekt modeluje ruch prostoliniowy i po łuku, prostokątne przeszkody, granice środowiska oraz kolizje wykrywane algorytmem SAT (*Separating Axis Theorem*).
 
-Aktualna wersja: **0.2**.
+Aktualna wersja: **0.3**.
 
 Projekt zawiera bibliotekę C++, aplikację demonstracyjną działającą w terminalu oraz testy jednostkowe GoogleTest.
 
@@ -18,22 +18,23 @@ Projekt zawiera bibliotekę C++, aplikację demonstracyjną działającą w term
 - wykonywanie pojedynczych kroków lub serii kroków;
 - zliczanie zaakceptowanych kroków i czasu symulacji;
 - zapisywanie historii zaakceptowanej trajektorii;
-- aplikacja konsolowa prezentująca przebieg symulacji;
-- 65 testów jednostkowych.
+- symulowane czujniki odległości wykorzystujące ray-casting dla przeszkód i granic środowiska;
+- pomiary czujników zwracane przez każdy krok symulacji;
+- aplikacja konsolowa prezentująca przebieg symulacji i pomiary czujnika;
+- 146 testów jednostkowych.
 
-## Co nowego w v0.2
+## Co nowego w v0.3
 
-W porównaniu z v0.1 dodano:
+W porównaniu z v0.2 dodano:
 
-- target wykonywalny `robot_simulator_app` i aplikację demonstracyjną;
-- `Robot::setVelocity()` do zmiany prędkości robota;
-- `Robot::robotNextPose()` do obliczania następnej pozycji bez zmiany aktualnego stanu;
-- historię trajektorii dostępną przez `Robot::getTrajectory()`;
-- `Simulation::runSteps()` do wykonywania zadanej liczby kroków;
-- strukturę `SimulationResult` opisującą wynik serii kroków;
-- całkowity licznik zaakceptowanych kroków i czas symulacji;
-- testy nowych funkcji robota i symulacji;
-- sprawdzanie przewidywanego obrysu bez tworzenia kopii całego obiektu `Robot`.
+- `DistanceSensor` z pozycją i orientacją względną wobec robota;
+- ray-casting granic środowiska oraz prostokątnych przeszkód;
+- minimalny i maksymalny zasięg oraz obsługę obiektów poza zakresem;
+- wybór najbliższego echa spośród przeszkód i granic środowiska;
+- wyniki ray-castingu dla każdego czujnika w `SimulationUpdate`;
+- konfigurowalną, dodatnią i nieparzystą liczbę promieni w `Simulation`;
+- prezentację pomiarów po każdym kroku w aplikacji demonstracyjnej;
+- testy geometrii, czujnika i integracji czujników z symulacją.
 
 ## Wymagania
 
@@ -95,7 +96,7 @@ Demonstracja składa się z dwóch faz:
 1. robot wykonuje cztery kroki z prędkością liniową `2.0` i kątową `0.25 rad/s`;
 2. prędkość zostaje zmieniona na liniową `4.0` i kątową `0.15 rad/s`, po czym symulacja próbuje wykonać maksymalnie dziesięć kroków.
 
-Program wypisuje wynik każdej fazy, całkowitą liczbę zaakceptowanych kroków, czas symulacji, końcową pozycję i pełną historię trajektorii. W aktualnym scenariuszu zakrzywiona trajektoria kończy się zatrzymaniem robota przed opuszczeniem środowiska.
+Robot ma jeden czujnik odległości z trzema promieniami. Po każdej próbie kroku program wypisuje numer próby, numer zaakceptowanego kroku, czas, stan kroku oraz wynik ray-castingu z odległością najbliższego echa. W aktualnym scenariuszu zakrzywiona trajektoria kończy się zatrzymaniem robota przed opuszczeniem środowiska.
 
 ## Uruchamianie testów
 
@@ -105,18 +106,19 @@ Po skonfigurowaniu projektu z `BUILD_TESTING=ON` wykonaj:
 ctest --test-dir build --output-on-failure
 ```
 
-Projekt zawiera 65 testów:
+Projekt zawiera 146 testów:
 
 | Obszar | Liczba testów |
 | --- | ---: |
-| geometria | 6 |
-| robot | 17 |
+| geometria i ray-casting | 37 |
+| robot | 19 |
 | przeszkody | 7 |
 | środowisko i kolizje | 20 |
-| symulacja | 15 |
-| **razem** | **65** |
+| czujnik odległości | 45 |
+| symulacja | 18 |
+| **razem** | **146** |
 
-Testy obejmują między innymi walidację wymiarów i kroku czasowego, ruch prostoliniowy i kołowy, obrócone prostokąty, SAT, granice środowiska, predykcję ruchu, zmianę prędkości, historię trajektorii, wykonywanie serii kroków oraz liczniki czasu i kroków.
+Testy obejmują między innymi walidację wymiarów i kroku czasowego, ruch prostoliniowy i kołowy, obrócone prostokąty, SAT, granice środowiska, ray-casting przeszkód i granic, zasięgi czujnika, integrację czujników z symulacją, historię trajektorii oraz liczniki czasu i kroków.
 
 ## Model danych
 
@@ -208,11 +210,41 @@ Konstruktor odrzuca zerową i ujemną szerokość lub długość.
 
 Dotknięcie granicy środowiska jest dozwolone. Dopiero narożnik znajdujący się poza granicą powoduje odrzucenie pozycji.
 
+### `DistanceSensor`
+
+`DistanceSensor` jest montowany względem układu robota przez `Pose` przekazane do konstruktora. Metoda `getWorldPose()` wyznacza jego aktualną pozycję i orientację w świecie.
+
+Najważniejsza metoda pomiarowa to:
+
+```cpp
+RaycastResult nearestObjectDetected(
+    const Environment& environment,
+    int ray_count,
+    const Pose& robot_pose
+) const;
+```
+
+`ray_count` musi być dodatni i nieparzysty; jeden promień zawsze biegnie w centralnym kierunku czujnika. Pomiar uwzględnia przeszkody oraz granice środowiska i wybiera najbliższe echo. `distance_to_object` zachowuje fizyczną odległość także wtedy, gdy echo jest poza zakresem czujnika.
+
+```cpp
+struct RaycastResult {
+    bool object_detected;
+    double distance_to_object;
+    DetectionType detection_type;
+};
+```
+
+- `OBJECTDETECTED` oznacza echo w przedziale `[min_distance, max_distance]`;
+- `OBJECTOUTOFRANGE` oznacza echo poza tym przedziałem;
+- `NOOBJECTDETECTED` oznacza brak echa; dla `nearestObjectDetected()` czujnik znajdujący się wewnątrz poprawnego prostokątnego środowiska zwykle zawsze otrzyma echo granicy.
+
+Robot może przechowywać wiele czujników przez `addDistanceSensor()`, a `getDistanceSensors()` udostępnia je jako stałą referencję.
+
 ### `Simulation`
 
 `Simulation` łączy istniejący obiekt `Robot` z istniejącym obiektem `Environment` i przechowuje do nich referencje. Robot i środowisko muszą więc istnieć przez cały czas życia symulacji.
 
-Konstruktor przyjmuje dodatni czas jednego kroku `dt`. Wartość zerowa lub ujemna powoduje `std::invalid_argument`.
+Konstruktor przyjmuje dodatni czas jednego kroku `dt` oraz opcjonalną liczbę promieni używanych przez czujniki. Liczba promieni musi być dodatnia i nieparzysta; domyślna wartość to `1`.
 
 `update()` wykonuje pojedynczy krok:
 
@@ -221,6 +253,7 @@ Konstruktor przyjmuje dodatni czas jednego kroku `dt`. Wartość zerowa lub ujem
 3. sprawdza granice środowiska;
 4. sprawdza kolizję z przeszkodami;
 5. akceptuje ruch dopiero wtedy, gdy przewidywany stan jest bezpieczny.
+6. wykonuje ray-casting dla każdego czujnika robota i dołącza wyniki do `SimulationUpdate`.
 
 Jeżeli krok jest niedozwolony, robot pozostaje w ostatniej bezpiecznej pozycji, jego prędkość zostaje wyzerowana, a odrzucony punkt nie trafia do trajektorii i nie zwiększa liczników symulacji.
 
@@ -236,6 +269,7 @@ Pojedynczy krok zwraca:
 struct SimulationUpdate {
     StopReason stop_reason;
     bool step_accepted;
+    std::vector<RaycastResult> raycast_results;
 };
 ```
 
@@ -252,6 +286,7 @@ struct SimulationResult {
 - `executed_steps` dotyczy tylko bieżącego wywołania `runSteps()`;
 - `simulation_completed` oznacza, że wykonano wszystkie żądane kroki;
 - `stop_reason` wyjaśnia przyczynę wcześniejszego zatrzymania.
+- `raycast_results` zawiera jeden pomiar dla każdego czujnika robota, także gdy próba kroku została odrzucona.
 
 Możliwe przyczyny zatrzymania:
 
@@ -278,6 +313,7 @@ Dotknięcie przeszkody bokiem lub narożnikiem jest traktowane jako kolizja.
 
 ```cpp
 #include <robot_simulation/environment.hpp>
+#include <robot_simulation/distance_sensor.hpp>
 #include <robot_simulation/obstacle.hpp>
 #include <robot_simulation/robot.hpp>
 #include <robot_simulation/simulation.hpp>
@@ -298,11 +334,13 @@ Robot robot(
     Rectangle{2.0, 4.0}
 );
 
-Simulation simulation(0.5, robot, environment);
-const SimulationResult result = simulation.runSteps(10);
+robot.addDistanceSensor(DistanceSensor(0.0, 10.0, Pose{}, pi / 2.0));
+Simulation simulation(0.5, robot, environment, 3);
+const SimulationUpdate update = simulation.update();
 
-if (!result.simulation_completed) {
-    // result.stop_reason określa przyczynę zatrzymania.
+if (!update.raycast_results.empty()) {
+    const RaycastResult& measurement = update.raycast_results.front();
+    // measurement opisuje najbliższe echo pierwszego czujnika.
 }
 
 const auto& trajectory = robot.getTrajectory();
@@ -322,12 +360,14 @@ robot_simulator/
 └── .gitignore                   Reguły ignorowania plików lokalnych
 ```
 
-## Ograniczenia v0.2
+## Ograniczenia v0.3
 
 - Kolizja jest sprawdzana dyskretnie dla stanu na końcu kroku. Przy dużym `dt`, dużej prędkości albo cienkiej przeszkodzie robot może przeskoczyć przez przeszkodę pomiędzy kolejnymi stanami.
 - Przy przewidzianej kolizji robot pozostaje w pozycji sprzed kroku. Symulator nie wyznacza dokładnego czasu ani punktu kontaktu.
 - Walidowane są dodatnie wymiary i dodatni krok czasowy, ale wartości `NaN` oraz nieskończoności nie są jeszcze odrzucane.
 - Historia trajektorii rośnie z każdym wykonanym ruchem i nie ma obecnie limitu rozmiaru.
+- Czujnik nie rozróżnia w `RaycastResult`, czy echo pochodzi od przeszkody czy granicy środowiska.
+- Model pomiaru nie uwzględnia szumu ani błędów systematycznych.
 - Aplikacja demonstracyjna nie przyjmuje jeszcze parametrów z wiersza poleceń ani pliku konfiguracyjnego.
 - Projekt nie zawiera jeszcze interfejsu graficznego, zapisu sceny ani automatycznego CI.
 
