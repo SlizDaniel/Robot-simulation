@@ -1,6 +1,7 @@
 #pragma once
 #include <robot_simulation/robot.hpp>
 #include <robot_simulation/environment.hpp>
+#include <vector>
 
 namespace robot_simulation{
     enum class StopReason{
@@ -12,6 +13,7 @@ namespace robot_simulation{
     struct SimulationUpdate {
         StopReason stop_reason;
         bool step_accepted;
+        std::vector<RaycastResult> raycast_results;
     };
 
     struct SimulationResult {
@@ -25,10 +27,13 @@ namespace robot_simulation{
         double step_time_;
         Robot& robot_;
         Environment& environment_;
+        int sensor_ray_count_;
         std::size_t simulation_step_ = 0;
 
+        std::vector<RaycastResult> calculateRaycastResults() const;
+
         public:
-        Simulation(double dt, Robot& robot, Environment& environment);
+        Simulation(double dt, Robot& robot, Environment& environment, int sensor_ray_count = 1);
 
         SimulationUpdate update();
 

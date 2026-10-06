@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <robot_simulation/distance_sensor.hpp>
 #include <robot_simulation/environment.hpp>
 #include <robot_simulation/math_constans.hpp>
 #include <robot_simulation/obstacle.hpp>
@@ -31,6 +32,45 @@ namespace robot_simulation{
         Environment environment(environment_size);
 
         EXPECT_THROW(Simulation(-0.5, robot, environment), std::invalid_argument);
+    }
+
+    TEST(SimulationTests, RejectsInvalidSensorRayCount){
+        Robot robot(Pose{}, Velocity{}, Rectangle{2.0, 4.0});
+        Environment environment(Rectangle{20.0, 30.0});
+
+        EXPECT_THROW(Simulation(0.5, robot, environment, 0), std::invalid_argument);
+        EXPECT_THROW(Simulation(0.5, robot, environment, 2), std::invalid_argument);
+    }
+
+    TEST(SimulationTests, ReportsRaycastResultsForAttachedSensorsAfterAcceptedStep){
+        Robot robot(Pose{}, Velocity{2.0, 0.0}, Rectangle{2.0, 4.0});
+        robot.addDistanceSensor(DistanceSensor(0.0, 20.0, Pose{}, pi / 2.0));
+        Environment environment(Rectangle{20.0, 20.0});
+        environment.addObstacle(Obstacle(Pose{6.0, 0.0, 0.0}, Rectangle{2.0, 2.0}));
+        Simulation simulation(0.5, robot, environment, 1);
+
+        const SimulationUpdate update = simulation.update();
+
+        ASSERT_TRUE(update.step_accepted);
+        ASSERT_EQ(update.raycast_results.size(), 1U);
+        EXPECT_TRUE(update.raycast_results[0].object_detected);
+        EXPECT_NEAR(update.raycast_results[0].distance_to_object, 4.0, tolerance);
+        EXPECT_EQ(update.raycast_results[0].detection_type, DetectionType::OBJECTDETECTED);
+    }
+
+    TEST(SimulationTests, ReportsRaycastResultsAfterRejectedStep){
+        Robot robot(Pose{2.0, 0.0, 0.0}, Velocity{4.0, 0.0}, Rectangle{2.0, 4.0});
+        robot.addDistanceSensor(DistanceSensor(0.0, 10.0, Pose{}, pi / 2.0));
+        Environment environment(Rectangle{4.0, 10.0});
+        Simulation simulation(0.5, robot, environment, 1);
+
+        const SimulationUpdate update = simulation.update();
+
+        ASSERT_FALSE(update.step_accepted);
+        ASSERT_EQ(update.raycast_results.size(), 1U);
+        EXPECT_TRUE(update.raycast_results[0].object_detected);
+        EXPECT_NEAR(update.raycast_results[0].distance_to_object, 3.0, tolerance);
+        EXPECT_EQ(update.raycast_results[0].detection_type, DetectionType::OBJECTDETECTED);
     }
 
     TEST(SimulationTests, MovesRobotWhenPredictedPositionIsSafe){
