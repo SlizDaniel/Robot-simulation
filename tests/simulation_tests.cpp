@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <robot_simulation/distance_sensor.hpp>
 #include <robot_simulation/environment.hpp>
-#include <robot_simulation/math_constans.hpp>
+#include <robot_simulation/math_constants.hpp>
 #include <robot_simulation/obstacle.hpp>
 #include <robot_simulation/robot.hpp>
 #include <robot_simulation/simulation.hpp>

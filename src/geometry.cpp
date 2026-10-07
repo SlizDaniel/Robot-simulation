@@ -4,7 +4,7 @@
 #include <array>
 #include <stdexcept>
 #include <algorithm>
-#include <robot_simulation/math_constans.hpp>
+#include <robot_simulation/math_constants.hpp>
 
 namespace robot_simulation{
     namespace{
