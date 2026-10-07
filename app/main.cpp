@@ -1,9 +1,10 @@
 #include <robot_simulation/distance_sensor.hpp>
 #include <robot_simulation/environment.hpp>
-#include <robot_simulation/math_constans.hpp>
+#include <robot_simulation/math_constants.hpp>
 #include <robot_simulation/obstacle.hpp>
 #include <robot_simulation/robot.hpp>
 #include <robot_simulation/simulation.hpp>
+#include <robot_simulation/version.hpp>
 
 #include <cstddef>
 #include <iomanip>
@@ -178,7 +179,7 @@ int main(){
 
     std::cout << std::fixed << std::setprecision(2);
     printSeparator('=');
-    std::cout << "                 ROBOT SIMULATOR v0.3 DEMO\n";
+    std::cout << "                 ROBOT SIMULATOR v" << version << " DEMO\n";
     printSeparator('=');
     std::cout << std::left
               << std::setw(22) << "Environment"

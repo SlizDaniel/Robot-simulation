@@ -4,7 +4,7 @@
 #include <robot_simulation/obstacle.hpp>
 #include <robot_simulation/types.hpp>
 #include "helpers.hpp"
-#include <robot_simulation/math_constans.hpp>
+#include <robot_simulation/math_constants.hpp>
 #include <array>
 #include <cmath>
 #include <stdexcept>

@@ -33,7 +33,7 @@ class DistanceSensor{
 
         double getSensorMinDistance () const {return min_distance_;}
 
-        const Pose getRelativeToRobotPose () const {return relativeToRobotPose_;}
+        Pose getRelativeToRobotPose () const {return relativeToRobotPose_;}
 
         Pose getWorldPose (const Pose& robot_pose) const;
 

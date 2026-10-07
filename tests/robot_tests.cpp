@@ -3,7 +3,7 @@
 #include <robot_simulation/robot.hpp>
 #include <robot_simulation/types.hpp>
 #include "helpers.hpp"
-#include <robot_simulation/math_constans.hpp>
+#include <robot_simulation/math_constants.hpp>
 #include <stdexcept>
 #include <vector>
 

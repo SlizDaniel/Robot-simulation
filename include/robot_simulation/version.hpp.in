@@ -1,0 +1,5 @@
+#pragma once
+
+namespace robot_simulation {
+    inline constexpr char version[] = "@PROJECT_VERSION@";
+}

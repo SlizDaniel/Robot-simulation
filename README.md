@@ -2,7 +2,7 @@
 
 Prosty symulator ruchu prostokątnego robota mobilnego w środowisku 2D, napisany w C++17. Projekt modeluje ruch prostoliniowy i po łuku, prostokątne przeszkody, granice środowiska oraz kolizje wykrywane algorytmem SAT (*Separating Axis Theorem*).
 
-Aktualna wersja: **0.3**.
+Aktualna wersja: **0.3.0**.
 
 Projekt zawiera bibliotekę C++, aplikację demonstracyjną działającą w terminalu oraz testy jednostkowe GoogleTest.
 
@@ -369,7 +369,7 @@ robot_simulator/
 - Czujnik nie rozróżnia w `RaycastResult`, czy echo pochodzi od przeszkody czy granicy środowiska.
 - Model pomiaru nie uwzględnia szumu ani błędów systematycznych.
 - Aplikacja demonstracyjna nie przyjmuje jeszcze parametrów z wiersza poleceń ani pliku konfiguracyjnego.
-- Projekt nie zawiera jeszcze interfejsu graficznego, zapisu sceny ani automatycznego CI.
+- Projekt nie zawiera jeszcze interfejsu graficznego ani zapisu sceny.
 
 ## Możliwe kierunki rozwoju
 
@@ -380,7 +380,6 @@ robot_simulator/
 - konfiguracja sceny z argumentów programu lub pliku;
 - wizualizacja środowiska i trajektorii;
 - zapis i odczyt sceny;
-- automatyczne budowanie i testowanie w CI.
 
 ## Licencja
 
