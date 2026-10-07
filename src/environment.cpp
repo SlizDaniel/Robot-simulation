@@ -1,7 +1,7 @@
 #include <robot_simulation/environment.hpp>
 #include <cmath>
 #include <array>
-#include <robot_simulation/math_constans.hpp>
+#include <robot_simulation/math_constants.hpp>
 #include <algorithm>
 #include <vector>
 #include <stdexcept>

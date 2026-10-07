@@ -1,13 +1,19 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(robot_simulator
-    VERSION 0.2
+    VERSION 0.3.0
     LANGUAGES CXX
 )
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+configure_file(
+    include/robot_simulation/version.hpp.in
+    ${CMAKE_CURRENT_BINARY_DIR}/generated/robot_simulation/version.hpp
+    @ONLY
+)
 
 add_library(robot_simulator
     src/robot.cpp
@@ -21,6 +27,7 @@ add_library(robot_simulator
 target_include_directories(robot_simulator
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_BINARY_DIR}/generated
 )
 
 add_executable(robot_simulator_app

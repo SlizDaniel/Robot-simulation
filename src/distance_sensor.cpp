@@ -1,5 +1,5 @@
 #include <robot_simulation/distance_sensor.hpp>
-#include <robot_simulation/math_constans.hpp>
+#include <robot_simulation/math_constants.hpp>
 #include <robot_simulation/geometry.hpp>
 #include <robot_simulation/types.hpp>
 #include <robot_simulation/environment.hpp>
@@ -106,7 +106,8 @@ namespace robot_simulation{
                 }
                 ray_step = field_of_view_ / (ray_count - 1);
                 double closest_border = infinity;
-                for (double current_angle = -field_of_view_/2; current_angle <= field_of_view_ / 2; current_angle+=ray_step){
+                for (int ray_index = 0; ray_index < ray_count; ++ray_index){
+                    const double current_angle = -field_of_view_ / 2 + ray_index * ray_step;
                     RaycastResult current_result = calculateDistanceSensorEnvironment(
                         {sensor_world_pose.x, sensor_world_pose.y, sensor_world_pose.theta + current_angle}, min_max, environment_size);
                     if (current_result.distance_to_object < closest_border){
