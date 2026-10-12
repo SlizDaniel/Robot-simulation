@@ -55,6 +55,9 @@ namespace robot_simulation{
     }//namespace
     Environment::Environment(Rectangle size):
         size_(size){
+            if (!std::isfinite(size_.length) || !std::isfinite(size_.width)){
+                throw std::invalid_argument("Environment size must be finite!");
+            }
             if (size.length <= 0 || size.width <= 0){
                 throw std::invalid_argument("Environment size must be positive!");
             }
