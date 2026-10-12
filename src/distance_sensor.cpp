@@ -13,10 +13,10 @@ namespace robot_simulation{
         min_distance_(min_distance),
         field_of_view_(field_of_view),
         relativeToRobotPose_(to_robot_position){
-            if(std::isnan(min_distance_) || std::isnan(max_distance_) ||
-                std::isnan(field_of_view_) || std::isnan(relativeToRobotPose_.x) ||
-                std::isnan(relativeToRobotPose_.y) || std::isnan(relativeToRobotPose_.theta)){
-                throw std::invalid_argument("Sensor parameters must not be NaN");
+            if(!std::isfinite(min_distance_) || !std::isfinite(max_distance_) ||
+                !std::isfinite(field_of_view_) || !std::isfinite(relativeToRobotPose_.x) ||
+                !std::isfinite(relativeToRobotPose_.y) || !std::isfinite(relativeToRobotPose_.theta)){
+                throw std::invalid_argument("Sensor parameters must be finite");
             }
             if(min_distance_ < 0 || max_distance_ < 0){
                 throw std::invalid_argument("Sensor distances must be positive numbers");

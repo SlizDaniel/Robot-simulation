@@ -1,5 +1,8 @@
 #pragma once
 #include <robot_simulation/types.hpp>
+#include <robot_simulation/math_constants.hpp>
+#include <cmath>
+#include <stdexcept>
 
 namespace robot_simulation{
 
@@ -26,14 +29,14 @@ class DistanceSensor{
 
         public:
 
-        DistanceSensor(double min_distance, double max_distance,
-            Pose to_robot_position, double field_of_view);
+        DistanceSensor(double min_distance = 2.0, double max_distance = 20.0,
+            Pose to_robot_position = {0.0, 0.0, 0.0}, double field_of_view = pi/2);
 
         double getSensorMaxDistance () const {return max_distance_;}
 
         double getSensorMinDistance () const {return min_distance_;}
 
-        Pose getRelativeToRobotPose () const {return relativeToRobotPose_;}
+        const Pose getRelativeToRobotPose () const {return relativeToRobotPose_;}
 
         Pose getWorldPose (const Pose& robot_pose) const;
 
@@ -44,6 +47,13 @@ class DistanceSensor{
             int ray_count, const Pose& robot_pose) const;
 
         RaycastResult nearestObjectDetected (const Environment& environment, 
-            const int ray_count, const Pose& robot_pose) const;
+            int ray_count, const Pose& robot_pose) const;
+
+        void setToRobotRotation(double theta) {
+            if (!std::isfinite(theta)){
+                throw std::invalid_argument("Sensor rotation must be finite");
+            }
+            relativeToRobotPose_.theta = theta;
+        }
     };
 }

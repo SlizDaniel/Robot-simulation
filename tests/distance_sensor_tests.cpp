@@ -48,6 +48,14 @@ namespace robot_simulation{
         EXPECT_THROW(DistanceSensor(0.0, 10.0, Pose{0.0, 0.0, nan}, pi / 3.0), std::invalid_argument);
     }
 
+    TEST(DistanceSensorTests, RejectsInfiniteParameters){
+        const double infinity = std::numeric_limits<double>::infinity();
+
+        EXPECT_THROW(DistanceSensor(infinity, 10.0, Pose{}, pi / 3.0), std::invalid_argument);
+        EXPECT_THROW(DistanceSensor(0.0, 10.0, Pose{0.0, infinity, 0.0}, pi / 3.0), std::invalid_argument);
+        EXPECT_THROW(DistanceSensor(0.0, 10.0, Pose{}, infinity), std::invalid_argument);
+    }
+
     TEST(DistanceSensorTests, RejectsZeroFieldOfView){
         EXPECT_THROW(DistanceSensor(0.0, 10.0, Pose{}, 0.0), std::invalid_argument);
     }
@@ -104,6 +112,16 @@ namespace robot_simulation{
         const Pose sensor_pose = sensor.getWorldPose(robot_pose);
 
         EXPECT_NEAR(sensor_pose.theta, 3.0 * pi / 4.0, tolerance);
+    }
+
+    TEST(DistanceSensorTests, RejectsNonFiniteRotationUpdate){
+        DistanceSensor sensor(0.0, 10.0, Pose{}, pi / 2.0);
+        const double nan = std::numeric_limits<double>::quiet_NaN();
+        const double infinity = std::numeric_limits<double>::infinity();
+
+        EXPECT_THROW(sensor.setToRobotRotation(nan), std::invalid_argument);
+        EXPECT_THROW(sensor.setToRobotRotation(infinity), std::invalid_argument);
+        EXPECT_DOUBLE_EQ(sensor.getRelativeToRobotPose().theta, 0.0);
     }
 
     TEST(DistanceSensorTests, ReportsNoDetectionInEmptyEnvironment){

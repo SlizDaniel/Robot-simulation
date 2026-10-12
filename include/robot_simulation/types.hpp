@@ -27,10 +27,6 @@ namespace robot_simulation{
     };
 
     using RectangleCorners = std::array<Point, 4>;
-    // struct RectangleCorners{
-    //     Point A;
-    //     Point B;
-    //     Point C;
-    //     Point D; 
-    // };
+
+    using DistanceSensorID = std::size_t;
 }// namespace robot_simulation
