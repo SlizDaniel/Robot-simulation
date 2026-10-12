@@ -1,21 +1,25 @@
-#include <robot_simulation/distance_sensor.hpp>
 #include <robot_simulation/environment.hpp>
 #include <robot_simulation/math_constants.hpp>
 #include <robot_simulation/obstacle.hpp>
 #include <robot_simulation/robot.hpp>
 #include <robot_simulation/simulation.hpp>
 #include <robot_simulation/version.hpp>
+#include <robot_simulation/avoid_obstacles_controller.hpp>
+#include <robot_simulation/controller.hpp>
+#include <robot_simulation/distance_sensors_front_setup.hpp>
 
 #include <cstddef>
 #include <iomanip>
 #include <iostream>
 #include <string>
 #include <vector>
+#include <memory>
 
 namespace {
     using robot_simulation::Pose;
     using robot_simulation::DetectionType;
-    using robot_simulation::DistanceSensor;
+    using robot_simulation::Controller;
+    using robot_simulation::DistanceSensorsFrontSetup;
     using robot_simulation::Environment;
     using robot_simulation::RaycastResult;
     using robot_simulation::Robot;
@@ -23,6 +27,7 @@ namespace {
     using robot_simulation::SimulationResult;
     using robot_simulation::SimulationUpdate;
     using robot_simulation::StopReason;
+    using robot_simulation::Velocity;
 
     constexpr int separator_width = 64;
 
@@ -110,9 +115,26 @@ namespace {
 
     SimulationResult runPhaseWithRaycasts(
         std::size_t step_count,
-        Simulation& simulation
+        Simulation& simulation,
+        Robot& robot,
+        Environment& environment,
+        const Controller& controller,
+        int ray_count,
+        const DistanceSensorsFrontSetup& front_sensors,
+        const Velocity& desired_velocity
     ){
         for(std::size_t step = 0; step < step_count; ++step){
+            robot.setVelocity(
+                desired_velocity.linearVelocity,
+                desired_velocity.angularVelocity
+            );
+            const Velocity controlled_velocity = controller.calculateVelocity(
+                robot, environment, ray_count, front_sensors
+            );
+            robot.setVelocity(
+                controlled_velocity.linearVelocity,
+                controlled_velocity.angularVelocity
+            );
             const SimulationUpdate update = simulation.update();
             for(const RaycastResult& result : update.raycast_results){
                 printRaycastResult(
@@ -173,9 +195,15 @@ int main(){
         Velocity{2.0, 0.25},
         robot_size
     );
-    const DistanceSensor sensor(0.2, 15.0, Pose{1.0, 0.0, 0.0}, pi / 2.0);
-    robot.addDistanceSensor(sensor);
+
+    const DistanceSensorsFrontSetup front_sensors =
+        setupDistanceSensorsOnRobot(robot, pi / 4.0);
+    std::unique_ptr<Controller> avoid_obstacle_controller =
+        std::make_unique<AvoidObstaclesController>(5.0, 2.0, 0.2);
     Simulation simulation(step_time, robot, environment, ray_count);
+
+    const Velocity first_phase_velocity{2.0, 0.25};
+    const Velocity second_phase_velocity{2.0, 0.0};
 
     std::cout << std::fixed << std::setprecision(2);
     printSeparator('=');
@@ -200,7 +228,15 @@ int main(){
     printSeparator();
 
     const SimulationResult first_phase = runPhaseWithRaycasts(
-        4, simulation);
+        4,
+        simulation,
+        robot,
+        environment,
+        *avoid_obstacle_controller,
+        ray_count,
+        front_sensors,
+        first_phase_velocity
+    );
     printPhaseResult(
         "PHASE 1: linear 2.00, angular 0.25 rad/s",
         first_phase,
@@ -208,11 +244,18 @@ int main(){
         robot.getPose()
     );
 
-    robot.setVelocity(4.0, 0.15);
     const SimulationResult second_phase = runPhaseWithRaycasts(
-        10, simulation);
+        10,
+        simulation,
+        robot,
+        environment,
+        *avoid_obstacle_controller,
+        ray_count,
+        front_sensors,
+        second_phase_velocity
+    );
     printPhaseResult(
-        "PHASE 2: linear 4.00, angular 0.15 rad/s",
+        "PHASE 2: linear 2.00, angular 0.00 rad/s",
         second_phase,
         simulation,
         robot.getPose()

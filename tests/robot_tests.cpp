@@ -4,6 +4,7 @@
 #include <robot_simulation/types.hpp>
 #include "helpers.hpp"
 #include <robot_simulation/math_constants.hpp>
+#include <limits>
 #include <stdexcept>
 #include <vector>
 
@@ -58,6 +59,31 @@ namespace robot_simulation{
         const Rectangle size {2.0, -4.0};
 
         EXPECT_THROW(Robot(pose, velocity, size), std::invalid_argument);
+    }
+
+    TEST(RobotTests, RejectsNonFiniteConstructorParameters){
+        const double nan = std::numeric_limits<double>::quiet_NaN();
+        const double infinity = std::numeric_limits<double>::infinity();
+
+        EXPECT_THROW(Robot(Pose{nan, 0.0, 0.0}, Velocity{}, Rectangle{2.0, 4.0}), std::invalid_argument);
+        EXPECT_THROW(Robot(Pose{}, Velocity{infinity, 0.0}, Rectangle{2.0, 4.0}), std::invalid_argument);
+        EXPECT_THROW(Robot(Pose{}, Velocity{}, Rectangle{2.0, infinity}), std::invalid_argument);
+    }
+
+    TEST(RobotTests, AcceptsAngularVelocityAtLimits){
+        const Pose pose {0.0, 0.0, 0.0};
+        const Rectangle size {2.0, 4.0};
+
+        EXPECT_NO_THROW(Robot(pose, Velocity{0.0, -2.0 * pi}, size));
+        EXPECT_NO_THROW(Robot(pose, Velocity{0.0, 2.0 * pi}, size));
+    }
+
+    TEST(RobotTests, RejectsAngularVelocityOutsideLimits){
+        const Pose pose {0.0, 0.0, 0.0};
+        const Rectangle size {2.0, 4.0};
+
+        EXPECT_THROW(Robot(pose, Velocity{0.0, -2.0 * pi - 0.01}, size), std::invalid_argument);
+        EXPECT_THROW(Robot(pose, Velocity{0.0, 2.0 * pi + 0.01}, size), std::invalid_argument);
     }
 
     TEST(RobotTests, CornersCalculation){
@@ -227,6 +253,35 @@ namespace robot_simulation{
 
         EXPECT_DOUBLE_EQ(actual_velocity.linearVelocity, 3.0);
         EXPECT_DOUBLE_EQ(actual_velocity.angularVelocity, -0.25);
+    }
+
+    TEST(RobotTests, SetVelocityAcceptsAngularVelocityAtLimits){
+        Robot robot(Pose{}, Velocity{}, Rectangle{2.0, 4.0});
+
+        EXPECT_NO_THROW(robot.setVelocity(1.0, -2.0 * pi));
+        EXPECT_NO_THROW(robot.setVelocity(1.0, 2.0 * pi));
+    }
+
+    TEST(RobotTests, SetVelocityRejectsAngularVelocityOutsideLimits){
+        Robot robot(Pose{}, Velocity{1.0, 0.5}, Rectangle{2.0, 4.0});
+
+        EXPECT_THROW(robot.setVelocity(3.0, -2.0 * pi - 0.01), std::invalid_argument);
+        EXPECT_THROW(robot.setVelocity(3.0, 2.0 * pi + 0.01), std::invalid_argument);
+
+        const Velocity actual_velocity = robot.getVelocity();
+        EXPECT_DOUBLE_EQ(actual_velocity.linearVelocity, 1.0);
+        EXPECT_DOUBLE_EQ(actual_velocity.angularVelocity, 0.5);
+    }
+
+    TEST(RobotTests, SetVelocityRejectsNonFiniteValues){
+        Robot robot(Pose{}, Velocity{1.0, 0.5}, Rectangle{2.0, 4.0});
+        const double nan = std::numeric_limits<double>::quiet_NaN();
+        const double infinity = std::numeric_limits<double>::infinity();
+
+        EXPECT_THROW(robot.setVelocity(nan, 0.0), std::invalid_argument);
+        EXPECT_THROW(robot.setVelocity(0.0, infinity), std::invalid_argument);
+        EXPECT_DOUBLE_EQ(robot.getVelocity().linearVelocity, 1.0);
+        EXPECT_DOUBLE_EQ(robot.getVelocity().angularVelocity, 0.5);
     }
 
     TEST(RobotTests, UpdatedVelocityAffectsSubsequentMovement){

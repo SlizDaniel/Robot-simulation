@@ -4,6 +4,7 @@
 #include <robot_simulation/obstacle.hpp>
 #include <robot_simulation/robot.hpp>
 #include <robot_simulation/types.hpp>
+#include <limits>
 #include <stdexcept>
 
 namespace robot_simulation{
@@ -40,6 +41,14 @@ namespace robot_simulation{
         const Rectangle size {20.0, -30.0};
 
         EXPECT_THROW(Environment{size}, std::invalid_argument);
+    }
+
+    TEST(EnvironmentTests, RejectsNonFiniteSize){
+        const double nan = std::numeric_limits<double>::quiet_NaN();
+        const double infinity = std::numeric_limits<double>::infinity();
+
+        EXPECT_THROW(Environment(Rectangle{nan, 20.0}), std::invalid_argument);
+        EXPECT_THROW(Environment(Rectangle{20.0, infinity}), std::invalid_argument);
     }
 
     TEST(EnvironmentTests, StartsWithNoObstacles){

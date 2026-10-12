@@ -2,6 +2,7 @@
 #include <robot_simulation/math_constants.hpp>
 #include <robot_simulation/obstacle.hpp>
 #include <robot_simulation/types.hpp>
+#include <limits>
 #include <stdexcept>
 
 #include "helpers.hpp"
@@ -49,6 +50,14 @@ namespace robot_simulation{
         const Rectangle size {2.0, -4.0};
 
         EXPECT_THROW(Obstacle(pose, size), std::invalid_argument);
+    }
+
+    TEST(ObstacleTests, RejectsNonFiniteParameters){
+        const double nan = std::numeric_limits<double>::quiet_NaN();
+        const double infinity = std::numeric_limits<double>::infinity();
+
+        EXPECT_THROW(Obstacle(Pose{0.0, nan, 0.0}, Rectangle{2.0, 4.0}), std::invalid_argument);
+        EXPECT_THROW(Obstacle(Pose{}, Rectangle{infinity, 4.0}), std::invalid_argument);
     }
 
     TEST(ObstacleTests, CornersCalculation){

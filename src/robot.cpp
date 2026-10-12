@@ -1,5 +1,6 @@
 #include <robot_simulation/robot.hpp>
 #include <robot_simulation/geometry.hpp>
+#include <robot_simulation/math_constants.hpp>
 #include <cmath>
 #include <stdexcept>
 
@@ -9,8 +10,16 @@ namespace robot_simulation{
             pose_(pose),
             velocity_(velocity),
             size_(size){
+        if (!std::isfinite(pose_.x) || !std::isfinite(pose_.y) || !std::isfinite(pose_.theta) ||
+            !std::isfinite(velocity_.linearVelocity) || !std::isfinite(velocity_.angularVelocity) ||
+            !std::isfinite(size_.length) || !std::isfinite(size_.width)){
+            throw std::invalid_argument("Robot parameters must be finite");
+        }
         if (size.length <= 0 || size.width <= 0){
             throw std::invalid_argument("Robot size must be positive!");
+        }
+        if (velocity.angularVelocity < -2.0 * pi || velocity.angularVelocity > 2.0 * pi){
+            throw std::invalid_argument("Robot angular velocity must be in range [-2*pi, 2*pi]");
         }
         addPointToTrajectory(pose_);
     }
@@ -50,6 +59,12 @@ namespace{
     }
 
     void Robot::setVelocity(double linear_velocity, double angular_velocity){
+        if (!std::isfinite(linear_velocity) || !std::isfinite(angular_velocity)){
+            throw std::invalid_argument("Robot velocities must be finite");
+        }
+        if (angular_velocity < -2.0 * pi || angular_velocity > 2.0 * pi){
+            throw std::invalid_argument("Robot angular velocity must be in range [-2*pi, 2*pi]");
+        }
         velocity_.linearVelocity = linear_velocity;
         velocity_.angularVelocity = angular_velocity;
     }
@@ -57,5 +72,10 @@ namespace{
     void Robot::move(double dt) {
         pose_ = calculateNextPose(pose_, velocity_, dt);
         addPointToTrajectory(pose_);
+    }
+
+    DistanceSensorID Robot::addDistanceSensor (DistanceSensor distance_sensor){
+        distance_sensors_.push_back(distance_sensor);
+        return(distance_sensors_.size() - 1);
     }
 }//namespace robot_simulation

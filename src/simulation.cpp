@@ -1,5 +1,6 @@
 #include <robot_simulation/simulation.hpp>
 #include <robot_simulation/geometry.hpp>
+#include <cmath>
 #include <stdexcept>
 
 namespace robot_simulation{
@@ -9,7 +10,7 @@ namespace robot_simulation{
         environment_(environment),
         sensor_ray_count_(sensor_ray_count)
         {
-            if (step_time_ <= 0.0){
+            if (!std::isfinite(step_time_) || step_time_ <= 0.0){
                 throw std::invalid_argument("Simulation step time must be positive number");
             }
             if (sensor_ray_count_ <= 0 || sensor_ray_count_ % 2 == 0){

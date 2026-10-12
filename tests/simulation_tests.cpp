@@ -6,6 +6,7 @@
 #include <robot_simulation/robot.hpp>
 #include <robot_simulation/simulation.hpp>
 #include <robot_simulation/types.hpp>
+#include <limits>
 #include <stdexcept>
 #include <vector>
 
@@ -32,6 +33,16 @@ namespace robot_simulation{
         Environment environment(environment_size);
 
         EXPECT_THROW(Simulation(-0.5, robot, environment), std::invalid_argument);
+    }
+
+    TEST(SimulationTests, RejectsNonFiniteStepTime){
+        Robot robot(Pose{}, Velocity{}, Rectangle{2.0, 4.0});
+        Environment environment(Rectangle{20.0, 30.0});
+        const double nan = std::numeric_limits<double>::quiet_NaN();
+        const double infinity = std::numeric_limits<double>::infinity();
+
+        EXPECT_THROW(Simulation(nan, robot, environment), std::invalid_argument);
+        EXPECT_THROW(Simulation(infinity, robot, environment), std::invalid_argument);
     }
 
     TEST(SimulationTests, RejectsInvalidSensorRayCount){

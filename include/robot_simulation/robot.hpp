@@ -44,7 +44,6 @@ namespace robot_simulation{
 
         const std::vector<DistanceSensor>& getDistanceSensors() const {return distance_sensors_;}
 
-        void addDistanceSensor (DistanceSensor distance_sensor)
-            {distance_sensors_.push_back(distance_sensor);}
+        DistanceSensorID addDistanceSensor (DistanceSensor distance_sensor);
     };
 }// namespace robot_simulation
