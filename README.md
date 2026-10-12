@@ -2,7 +2,7 @@
 
 Prosty symulator ruchu prostokątnego robota mobilnego w środowisku 2D, napisany w C++17. Projekt modeluje ruch prostoliniowy i po łuku, prostokątne przeszkody, granice środowiska oraz kolizje wykrywane algorytmem SAT (*Separating Axis Theorem*).
 
-Aktualna wersja: **0.3.0**.
+Aktualna wersja: **0.4.0**.
 
 Projekt zawiera bibliotekę C++, aplikację demonstracyjną działającą w terminalu oraz testy jednostkowe GoogleTest.
 
@@ -20,8 +20,21 @@ Projekt zawiera bibliotekę C++, aplikację demonstracyjną działającą w term
 - zapisywanie historii zaakceptowanej trajektorii;
 - symulowane czujniki odległości wykorzystujące ray-casting dla przeszkód i granic środowiska;
 - pomiary czujników zwracane przez każdy krok symulacji;
+- konfigurowalny układ trzech przednich czujników odległości;
+- polimorficzny kontroler reaktywnego unikania przeszkód;
 - aplikacja konsolowa prezentująca przebieg symulacji i pomiary czujnika;
-- 146 testów jednostkowych.
+- 177 testów jednostkowych.
+
+## Co nowego w v0.4
+
+W porównaniu z v0.3 dodano:
+
+- interfejs `Controller` oraz `AvoidObstaclesController` sterowany przez `std::unique_ptr`;
+- konfigurację lewego, przedniego i prawego czujnika przez `setupDistanceSensorsOnRobot()`;
+- reakcję kontrolera: spowolnienie w strefie bezpiecznej oraz zatrzymanie i skręt w strefie krytycznej;
+- ograniczenie prędkości kątowej robota do przedziału `[-2π, 2π]`;
+- odrzucanie `NaN` oraz nieskończoności w parametrach modelu i czujnika;
+- demonstrację integrującą kontroler z pętlą symulacji oraz testy zachowania kontrolera.
 
 ## Co nowego w v0.3
 
@@ -91,12 +104,14 @@ Po zbudowaniu targetu uruchom:
 
 Aplikacja tworzy środowisko o długości `30` i szerokości `12`, robota rozpoczynającego ruch w punkcie `(-8, 0)` oraz przeszkodę w punkcie `(8, 0)`.
 
+Demonstracja tworzy trzy przednie czujniki i przekazuje komendy prędkości przez `AvoidObstaclesController`. Każda iteracja najpierw ustawia prędkość docelową, następnie kontroler ją koryguje na podstawie pomiarów, a na końcu `Simulation` wykonuje krok.
+
 Demonstracja składa się z dwóch faz:
 
 1. robot wykonuje cztery kroki z prędkością liniową `2.0` i kątową `0.25 rad/s`;
-2. prędkość zostaje zmieniona na liniową `4.0` i kątową `0.15 rad/s`, po czym symulacja próbuje wykonać maksymalnie dziesięć kroków.
+2. robot otrzymuje komendę jazdy `2.0 m/s` na wprost, po czym symulacja próbuje wykonać maksymalnie dziesięć kroków.
 
-Robot ma jeden czujnik odległości z trzema promieniami. Po każdej próbie kroku program wypisuje numer próby, numer zaakceptowanego kroku, czas, stan kroku oraz wynik ray-castingu z odległością najbliższego echa. W aktualnym scenariuszu zakrzywiona trajektoria kończy się zatrzymaniem robota przed opuszczeniem środowiska.
+Robot ma trzy czujniki odległości, każdy z trzema promieniami. Po każdej próbie kroku program wypisuje numer próby, numer zaakceptowanego kroku, czas, stan kroku oraz wynik ray-castingu z odległością najbliższego echa.
 
 ## Uruchamianie testów
 
@@ -106,17 +121,19 @@ Po skonfigurowaniu projektu z `BUILD_TESTING=ON` wykonaj:
 ctest --test-dir build --output-on-failure
 ```
 
-Projekt zawiera 146 testów:
+Projekt zawiera 177 testów:
 
 | Obszar | Liczba testów |
 | --- | ---: |
 | geometria i ray-casting | 37 |
-| robot | 19 |
-| przeszkody | 7 |
-| środowisko i kolizje | 20 |
-| czujnik odległości | 45 |
-| symulacja | 18 |
-| **razem** | **146** |
+| robot | 25 |
+| przeszkody | 8 |
+| środowisko i kolizje | 21 |
+| czujnik odległości | 47 |
+| symulacja | 19 |
+| kontroler unikania przeszkód | 17 |
+| konfiguracja przednich czujników | 3 |
+| **razem** | **177** |
 
 Testy obejmują między innymi walidację wymiarów i kroku czasowego, ruch prostoliniowy i kołowy, obrócone prostokąty, SAT, granice środowiska, ray-casting przeszkód i granic, zasięgi czujnika, integrację czujników z symulacją, historię trajektorii oraz liczniki czasu i kroków.
 
@@ -360,14 +377,14 @@ robot_simulator/
 └── .gitignore                   Reguły ignorowania plików lokalnych
 ```
 
-## Ograniczenia v0.3
+## Ograniczenia v0.4
 
 - Kolizja jest sprawdzana dyskretnie dla stanu na końcu kroku. Przy dużym `dt`, dużej prędkości albo cienkiej przeszkodzie robot może przeskoczyć przez przeszkodę pomiędzy kolejnymi stanami.
 - Przy przewidzianej kolizji robot pozostaje w pozycji sprzed kroku. Symulator nie wyznacza dokładnego czasu ani punktu kontaktu.
-- Walidowane są dodatnie wymiary i dodatni krok czasowy, ale wartości `NaN` oraz nieskończoności nie są jeszcze odrzucane.
 - Historia trajektorii rośnie z każdym wykonanym ruchem i nie ma obecnie limitu rozmiaru.
 - Czujnik nie rozróżnia w `RaycastResult`, czy echo pochodzi od przeszkody czy granicy środowiska.
 - Model pomiaru nie uwzględnia szumu ani błędów systematycznych.
+- Kontroler unikania jest reaktywny: nie planuje trasy do celu ani nie gwarantuje ominięcia każdej geometrii przeszkód przy dowolnym kroku czasowym i prędkości.
 - Aplikacja demonstracyjna nie przyjmuje jeszcze parametrów z wiersza poleceń ani pliku konfiguracyjnego.
 - Projekt nie zawiera jeszcze interfejsu graficznego ani zapisu sceny.
 
@@ -375,7 +392,6 @@ robot_simulator/
 
 - ciągłe wykrywanie kolizji lub adaptacyjny krok czasowy;
 - dokładne wyznaczanie czasu i punktu kontaktu;
-- walidacja `NaN` i nieskończoności;
 - opcjonalny limit lub wyłączanie historii trajektorii;
 - konfiguracja sceny z argumentów programu lub pliku;
 - wizualizacja środowiska i trajektorii;
