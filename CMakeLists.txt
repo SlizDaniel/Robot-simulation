@@ -15,7 +15,14 @@ configure_file(
     @ONLY
 )
 
-find_package(nlohmann_json CONFIG REQUIRED)
+include(FetchContent)
+
+FetchContent_Declare(
+    nlohmann_json
+    URL https://github.com/nlohmann/json/archive/refs/tags/v3.11.3.tar.gz
+)
+
+FetchContent_MakeAvailable(nlohmann_json)
 
 add_library(robot_simulator
     src/robot.cpp
@@ -55,8 +62,6 @@ include(CTest)
 enable_testing()
 
 if(BUILD_TESTING)
-    include(FetchContent)
-
     FetchContent_Declare(
         googletest
         URL
