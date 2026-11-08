@@ -11,8 +11,8 @@ namespace robot_simulation{
     };
 
     struct Velocity{
-        double linearVelocity{};
-        double angularVelocity{};
+        double linear_velocity{};
+        double angular_velocity{};
     };
 
     struct Rectangle{

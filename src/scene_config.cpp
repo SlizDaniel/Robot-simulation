@@ -22,8 +22,8 @@ namespace robot_simulation{
 
         Velocity parseVelocity(const json& json_data_velocity) {
             return {
-                json_data_velocity.at("linearVelocity").get<double>(),
-                json_data_velocity.at("angularVelocity").get<double>()
+                json_data_velocity.at("linear_velocity").get<double>(),
+                json_data_velocity.at("angular_velocity").get<double>()
             };
         }
 
@@ -105,8 +105,8 @@ namespace robot_simulation{
                 {"pose", poseToJson(config.robot.pose)},
                 {"size", rectangleToJson(config.robot.size)},
                 {"velocity", {
-                    {"linearVelocity", config.robot.velocity.linearVelocity},
-                    {"angularVelocity", config.robot.velocity.angularVelocity}
+                    {"linear_velocity", config.robot.velocity.linear_velocity},
+                    {"angular_velocity", config.robot.velocity.angular_velocity}
                 }}
             }},
             {"obstacles", json_data_obstacles},
@@ -119,6 +119,66 @@ namespace robot_simulation{
                 {"critical_distance", config.controller.critical_distance},
                 {"velocity_gain_critical", config.controller.velocity_gain_critical}
             }}
+        };
+
+        return json_data.dump(2);
+    }
+
+    std::string SnapshotToJson (const SimulationSnapshot& snapshot){
+        const auto stop_reason_to_string = [](StopReason stop_reason) {
+            switch (stop_reason) {
+                case StopReason::None:
+                    return "None";
+                case StopReason::OutOfEnvironment:
+                    return "OutOfEnvironment";
+                case StopReason::ObstacleCollision:
+                    return "ObstacleCollision";
+            }
+
+            return "Unknown";
+        };
+
+        const auto detection_type_to_string = [](DetectionType detection_type) {
+            switch (detection_type) {
+                case DetectionType::OBJECTDETECTED:
+                    return "OBJECTDETECTED";
+                case DetectionType::OBJECTOUTOFRANGE:
+                    return "OBJECTOUTOFRANGE";
+                case DetectionType::NOOBJECTDETECTED:
+                    return "NOOBJECTDETECTED";
+            }
+
+            return "Unknown";
+        };
+
+        json json_update = nullptr;
+        if (snapshot.update) {
+            json raycast_results = json::array();
+            for (const RaycastResult& result : snapshot.update->raycast_results) {
+                raycast_results.push_back({
+                    {"object_detected", result.object_detected},
+                    {"distance_to_object", result.distance_to_object},
+                    {"detection_type", detection_type_to_string(result.detection_type)}
+                });
+            }
+
+            json_update = {
+                {"stop_reason", stop_reason_to_string(snapshot.update->stop_reason)},
+                {"step_accepted", snapshot.update->step_accepted},
+                {"raycast_results", raycast_results}
+            };
+        }
+
+        const json json_data = {
+            {"robot_pose", poseToJson(snapshot.robot_pose)},
+            {"robot_velocity", {
+                {"linear_velocity", snapshot.robot_velocity.linear_velocity},
+                {"angular_velocity", snapshot.robot_velocity.angular_velocity}
+            }},
+            {"simulation_step", snapshot.simulation_step},
+            {"simulation_time", snapshot.simulation_time},
+            {"stopped", snapshot.stopped},
+            {"update", json_update}
         };
 
         return json_data.dump(2);

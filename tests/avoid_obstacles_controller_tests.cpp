@@ -61,10 +61,10 @@ namespace robot_simulation {
 
         const Velocity velocity = controller.calculateVelocity(robot, environment, 1, front_sensors);
 
-        EXPECT_DOUBLE_EQ(velocity.linearVelocity, 2.0);
-        EXPECT_DOUBLE_EQ(velocity.angularVelocity, -0.25);
-        EXPECT_DOUBLE_EQ(robot.getVelocity().linearVelocity, 2.0);
-        EXPECT_DOUBLE_EQ(robot.getVelocity().angularVelocity, -0.25);
+        EXPECT_DOUBLE_EQ(velocity.linear_velocity, 2.0);
+        EXPECT_DOUBLE_EQ(velocity.angular_velocity, -0.25);
+        EXPECT_DOUBLE_EQ(robot.getVelocity().linear_velocity, 2.0);
+        EXPECT_DOUBLE_EQ(robot.getVelocity().angular_velocity, -0.25);
     }
 
     TEST(AvoidObstaclesControllerTests, StopsAndTurnsRightInCriticalZoneWhenSidesAreEqual) {
@@ -75,8 +75,8 @@ namespace robot_simulation {
 
         const Velocity velocity = controller.calculateVelocity(robot, environment, 1, front_sensors);
 
-        EXPECT_DOUBLE_EQ(velocity.linearVelocity, 0.0);
-        EXPECT_NEAR(velocity.angularVelocity, -pi / 2.0, tolerance);
+        EXPECT_DOUBLE_EQ(velocity.linear_velocity, 0.0);
+        EXPECT_NEAR(velocity.angular_velocity, -pi / 2.0, tolerance);
     }
 
     TEST(AvoidObstaclesControllerTests, TurnsLeftWhenLeftSideIsClearerInCriticalZone) {
@@ -89,8 +89,8 @@ namespace robot_simulation {
 
         const Velocity velocity = controller.calculateVelocity(robot, environment, 1, front_sensors);
 
-        EXPECT_DOUBLE_EQ(velocity.linearVelocity, 0.0);
-        EXPECT_NEAR(velocity.angularVelocity, pi / 2.0, tolerance);
+        EXPECT_DOUBLE_EQ(velocity.linear_velocity, 0.0);
+        EXPECT_NEAR(velocity.angular_velocity, pi / 2.0, tolerance);
     }
 
     TEST(AvoidObstaclesControllerTests, TurnsRightWhenRightSideIsClearerInCriticalZone) {
@@ -103,8 +103,8 @@ namespace robot_simulation {
 
         const Velocity velocity = controller.calculateVelocity(robot, environment, 1, front_sensors);
 
-        EXPECT_DOUBLE_EQ(velocity.linearVelocity, 0.0);
-        EXPECT_NEAR(velocity.angularVelocity, -pi / 2.0, tolerance);
+        EXPECT_DOUBLE_EQ(velocity.linear_velocity, 0.0);
+        EXPECT_NEAR(velocity.angular_velocity, -pi / 2.0, tolerance);
     }
 
     TEST(AvoidObstaclesControllerTests, IgnoresOutOfRangeDetection) {
@@ -115,8 +115,8 @@ namespace robot_simulation {
 
         const Velocity velocity = controller.calculateVelocity(robot, environment, 1, front_sensors);
 
-        EXPECT_DOUBLE_EQ(velocity.linearVelocity, 2.0);
-        EXPECT_DOUBLE_EQ(velocity.angularVelocity, 0.25);
+        EXPECT_DOUBLE_EQ(velocity.linear_velocity, 2.0);
+        EXPECT_DOUBLE_EQ(velocity.angular_velocity, 0.25);
     }
 
     TEST(AvoidObstaclesControllerTests, SlowsDownInSafeZone) {
@@ -128,8 +128,8 @@ namespace robot_simulation {
 
         const Velocity velocity = controller.calculateVelocity(robot, environment, 1, front_sensors);
 
-        EXPECT_NEAR(velocity.linearVelocity, 1.6, tolerance);
-        EXPECT_LT(velocity.linearVelocity, robot.getVelocity().linearVelocity);
+        EXPECT_NEAR(velocity.linear_velocity, 1.6, tolerance);
+        EXPECT_LT(velocity.linear_velocity, robot.getVelocity().linear_velocity);
     }
 
     TEST(AvoidObstaclesControllerTests, UsesSafeZoneAtCriticalDistanceBoundary) {
@@ -141,8 +141,8 @@ namespace robot_simulation {
 
         const Velocity velocity = controller.calculateVelocity(robot, environment, 1, front_sensors);
 
-        EXPECT_NEAR(velocity.linearVelocity, 1.6, tolerance);
-        EXPECT_DOUBLE_EQ(velocity.angularVelocity, 0.0);
+        EXPECT_NEAR(velocity.linear_velocity, 1.6, tolerance);
+        EXPECT_DOUBLE_EQ(velocity.angular_velocity, 0.0);
     }
 
     TEST(AvoidObstaclesControllerTests, LeavesVelocityUnchangedAtSafeDistanceBoundary) {
@@ -154,8 +154,8 @@ namespace robot_simulation {
 
         const Velocity velocity = controller.calculateVelocity(robot, environment, 1, front_sensors);
 
-        EXPECT_DOUBLE_EQ(velocity.linearVelocity, 2.0);
-        EXPECT_DOUBLE_EQ(velocity.angularVelocity, 0.0);
+        EXPECT_DOUBLE_EQ(velocity.linear_velocity, 2.0);
+        EXPECT_DOUBLE_EQ(velocity.angular_velocity, 0.0);
     }
 
     TEST(AvoidObstaclesControllerTests, ClampsAngularVelocityInSafeZone) {
@@ -167,7 +167,7 @@ namespace robot_simulation {
 
         const Velocity velocity = controller.calculateVelocity(robot, environment, 1, front_sensors);
 
-        EXPECT_DOUBLE_EQ(velocity.angularVelocity, 2.0 * pi);
+        EXPECT_DOUBLE_EQ(velocity.angular_velocity, 2.0 * pi);
     }
 
     TEST(AvoidObstaclesControllerTests, RejectsInvalidSensorIDsAndRayCounts) {
@@ -191,8 +191,8 @@ namespace robot_simulation {
 
         const Velocity velocity = controller.calculateVelocity(robot, environment, 1, front_sensors);
 
-        EXPECT_DOUBLE_EQ(velocity.linearVelocity, 0.0);
-        EXPECT_NEAR(velocity.angularVelocity, -pi / 2.0, tolerance);
+        EXPECT_DOUBLE_EQ(velocity.linear_velocity, 0.0);
+        EXPECT_NEAR(velocity.angular_velocity, -pi / 2.0, tolerance);
     }
 
     TEST(AvoidObstaclesControllerTests, DetectsObstacleCloserThanPreviousDefaultMinimumRange) {
@@ -204,7 +204,7 @@ namespace robot_simulation {
 
         const Velocity velocity = controller.calculateVelocity(robot, environment, 1, front_sensors);
 
-        EXPECT_DOUBLE_EQ(velocity.linearVelocity, 0.0);
+        EXPECT_DOUBLE_EQ(velocity.linear_velocity, 0.0);
     }
 
     TEST(AvoidObstaclesControllerTests, StopsLinearMotionDuringSimulationUpdateInCriticalZone) {
@@ -213,7 +213,7 @@ namespace robot_simulation {
         Environment environment = criticalObstacleEnvironment();
         const AvoidObstaclesController controller(10.0, 5.0);
         const Velocity velocity = controller.calculateVelocity(robot, environment, 1, front_sensors);
-        robot.setVelocity(velocity.linearVelocity, velocity.angularVelocity);
+        robot.setVelocity(velocity.linear_velocity, velocity.angular_velocity);
         Simulation simulation(0.5, robot, environment, 1);
 
         const SimulationUpdate update = simulation.update();
@@ -231,14 +231,14 @@ namespace robot_simulation {
         Environment environment = criticalObstacleEnvironment();
         const AvoidObstaclesController controller(10.0, 5.0);
         const Velocity critical_velocity = controller.calculateVelocity(robot, environment, 1, front_sensors);
-        robot.setVelocity(critical_velocity.linearVelocity, critical_velocity.angularVelocity);
+        robot.setVelocity(critical_velocity.linear_velocity, critical_velocity.angular_velocity);
         Simulation simulation(0.5, robot, environment, 1);
         ASSERT_TRUE(simulation.update().step_accepted);
 
         robot.setVelocity(2.0, 0.0);
         const Velocity velocity = controller.calculateVelocity(robot, environment, 1, front_sensors);
 
-        EXPECT_DOUBLE_EQ(velocity.linearVelocity, 2.0);
-        EXPECT_DOUBLE_EQ(velocity.angularVelocity, 0.0);
+        EXPECT_DOUBLE_EQ(velocity.linear_velocity, 2.0);
+        EXPECT_DOUBLE_EQ(velocity.angular_velocity, 0.0);
     }
 }

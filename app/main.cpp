@@ -125,15 +125,15 @@ namespace {
     ){
         for(std::size_t step = 0; step < step_count; ++step){
             robot.setVelocity(
-                desired_velocity.linearVelocity,
-                desired_velocity.angularVelocity
+                desired_velocity.linear_velocity,
+                desired_velocity.angular_velocity
             );
             const Velocity controlled_velocity = controller.calculateVelocity(
                 robot, environment, ray_count, front_sensors
             );
             robot.setVelocity(
-                controlled_velocity.linearVelocity,
-                controlled_velocity.angularVelocity
+                controlled_velocity.linear_velocity,
+                controlled_velocity.angular_velocity
             );
             const SimulationUpdate update = simulation.update();
             for(const RaycastResult& result : update.raycast_results){

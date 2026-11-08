@@ -102,8 +102,8 @@ namespace robot_simulation{
         EXPECT_NEAR(actual_pose.x, 1.0, tolerance);
         EXPECT_NEAR(actual_pose.y, 0.0, tolerance);
         EXPECT_NEAR(actual_pose.theta, 0.0, tolerance);
-        EXPECT_DOUBLE_EQ(actual_velocity.linearVelocity, velocity.linearVelocity);
-        EXPECT_DOUBLE_EQ(actual_velocity.angularVelocity, velocity.angularVelocity);
+        EXPECT_DOUBLE_EQ(actual_velocity.linear_velocity, velocity.linear_velocity);
+        EXPECT_DOUBLE_EQ(actual_velocity.angular_velocity, velocity.angular_velocity);
     }
 
     TEST(SimulationTests, MovesRobotAlongCircularPathWhenPredictedPositionIsSafe){
@@ -147,8 +147,8 @@ namespace robot_simulation{
         EXPECT_NEAR(actual_pose.x, robot_pose.x, tolerance);
         EXPECT_NEAR(actual_pose.y, robot_pose.y, tolerance);
         EXPECT_NEAR(actual_pose.theta, robot_pose.theta, tolerance);
-        EXPECT_DOUBLE_EQ(actual_velocity.linearVelocity, 0.0);
-        EXPECT_DOUBLE_EQ(actual_velocity.angularVelocity, 0.0);
+        EXPECT_DOUBLE_EQ(actual_velocity.linear_velocity, 0.0);
+        EXPECT_DOUBLE_EQ(actual_velocity.angular_velocity, 0.0);
     }
 
     TEST(SimulationTests, StopsRobotBeforeLeavingEnvironment){
@@ -169,8 +169,8 @@ namespace robot_simulation{
         EXPECT_NEAR(actual_pose.x, robot_pose.x, tolerance);
         EXPECT_NEAR(actual_pose.y, robot_pose.y, tolerance);
         EXPECT_NEAR(actual_pose.theta, robot_pose.theta, tolerance);
-        EXPECT_DOUBLE_EQ(actual_velocity.linearVelocity, 0.0);
-        EXPECT_DOUBLE_EQ(actual_velocity.angularVelocity, 0.0);
+        EXPECT_DOUBLE_EQ(actual_velocity.linear_velocity, 0.0);
+        EXPECT_DOUBLE_EQ(actual_velocity.angular_velocity, 0.0);
     }
 
     TEST(SimulationTests, RunZeroStepsDoesNotChangeSimulation){

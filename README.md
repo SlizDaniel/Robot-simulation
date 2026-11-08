@@ -149,8 +149,8 @@ struct Pose {
 };
 
 struct Velocity {
-    double linearVelocity;
-    double angularVelocity;
+    double linear_velocity;
+    double angular_velocity;
 };
 
 struct Rectangle {
