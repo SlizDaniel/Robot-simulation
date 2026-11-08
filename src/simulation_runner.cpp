@@ -12,13 +12,10 @@
 #include <robot_simulation/math_constants.hpp>
 #include <memory>
 #include <stdexcept>
+#include <optional>
 
 
 namespace robot_simulation{
-    SimulationRunner::SimulationRunner(const SceneConfig& config):
-            config_(config),
-            session_(std::make_unique<Session>(config)){}
-
     struct SimulationRunner::Session
     {
         Environment environment;
@@ -26,6 +23,7 @@ namespace robot_simulation{
         DistanceSensorsFrontSetup front_sensors;
         std::unique_ptr <Simulation> simulation;
         std::unique_ptr <Controller> controller;
+        std::optional<SimulationUpdate> last_update;
 
         bool stopped = false;
 
@@ -51,6 +49,10 @@ namespace robot_simulation{
         }
     };
 
+    SimulationRunner::SimulationRunner(const SceneConfig& config):
+            session_(std::make_unique<Session>(config)),
+            config_(config){}
+
     SimulationRunner::~SimulationRunner() = default;
 
     SimulationUpdate SimulationRunner::update(){
@@ -58,13 +60,14 @@ namespace robot_simulation{
             throw std::logic_error("Session stopped! Reset required.");
         }
 
-        Velocity initialVelocity = config_.robot.velocity;
-        session_->robot.setVelocity(initialVelocity.linearVelocity, initialVelocity.angularVelocity);
-        Velocity controllerVelocity = session_->controller->calculateVelocity(session_->robot, 
+        Velocity initial_velocity = config_.robot.velocity;
+        session_->robot.setVelocity(initial_velocity.linear_velocity, initial_velocity.angular_velocity);
+        Velocity controller_velocity = session_->controller->calculateVelocity(session_->robot,
             session_->environment, config_.ray_count, session_->front_sensors);
-        session_->robot.setVelocity(controllerVelocity.linearVelocity, 
-            controllerVelocity.angularVelocity);
+        session_->robot.setVelocity(controller_velocity.linear_velocity,
+            controller_velocity.angular_velocity);
         SimulationUpdate update = session_->simulation->update();
+        session_->last_update = update;
         if (!update.step_accepted){
             session_->stopped = true;
         }
@@ -85,4 +88,14 @@ namespace robot_simulation{
 
     bool SimulationRunner::isStopped() const {return session_->stopped;}
     
+    SimulationSnapshot SimulationRunner::getSimulationSnapshot() const {
+        return{
+            session_->robot.getPose(),
+            session_->robot.getVelocity(),
+            session_->simulation->getSimulationStep(),
+            session_->simulation->getSimulationTime(),
+            session_->stopped,
+            session_->last_update
+        };
+    }
 }//robot_simulation

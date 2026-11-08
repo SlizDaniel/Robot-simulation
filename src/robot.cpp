@@ -11,14 +11,14 @@ namespace robot_simulation{
             velocity_(velocity),
             size_(size){
         if (!std::isfinite(pose_.x) || !std::isfinite(pose_.y) || !std::isfinite(pose_.theta) ||
-            !std::isfinite(velocity_.linearVelocity) || !std::isfinite(velocity_.angularVelocity) ||
+            !std::isfinite(velocity_.linear_velocity) || !std::isfinite(velocity_.angular_velocity) ||
             !std::isfinite(size_.length) || !std::isfinite(size_.width)){
             throw std::invalid_argument("Robot parameters must be finite");
         }
         if (size.length <= 0 || size.width <= 0){
             throw std::invalid_argument("Robot size must be positive!");
         }
-        if (velocity.angularVelocity < -2.0 * pi || velocity.angularVelocity > 2.0 * pi){
+        if (velocity.angular_velocity < -2.0 * pi || velocity.angular_velocity > 2.0 * pi){
             throw std::invalid_argument("Robot angular velocity must be in range [-2*pi, 2*pi]");
         }
         addPointToTrajectory(pose_);
@@ -32,16 +32,16 @@ namespace{
     Pose calculateNextPose(Pose pose, Velocity velocity, double dt) {
         double dx = 0.0;
         double dy = 0.0;
-        if (std::abs(velocity.angularVelocity) * dt < 1e-6){
-            dy = velocity.linearVelocity * dt * std::sin(pose.theta);
-            dx = velocity.linearVelocity * dt *std::cos(pose.theta);
-            pose.theta +=velocity.angularVelocity * dt;
+        if (std::abs(velocity.angular_velocity) * dt < 1e-6){
+            dy = velocity.linear_velocity * dt * std::sin(pose.theta);
+            dx = velocity.linear_velocity * dt *std::cos(pose.theta);
+            pose.theta +=velocity.angular_velocity * dt;
         }
         else{
-            double theta_next = pose.theta + velocity.angularVelocity * dt;
-            dy = (velocity.linearVelocity/velocity.angularVelocity)
+            double theta_next = pose.theta + velocity.angular_velocity * dt;
+            dy = (velocity.linear_velocity/velocity.angular_velocity)
             * (std::cos(pose.theta)-std::cos(theta_next));
-            dx = (velocity.linearVelocity/velocity.angularVelocity) *
+            dx = (velocity.linear_velocity/velocity.angular_velocity) *
             (std::sin(theta_next)-std::sin(pose.theta));
             pose.theta = theta_next;
         }
@@ -65,8 +65,8 @@ namespace{
         if (angular_velocity < -2.0 * pi || angular_velocity > 2.0 * pi){
             throw std::invalid_argument("Robot angular velocity must be in range [-2*pi, 2*pi]");
         }
-        velocity_.linearVelocity = linear_velocity;
-        velocity_.angularVelocity = angular_velocity;
+        velocity_.linear_velocity = linear_velocity;
+        velocity_.angular_velocity = angular_velocity;
     }
 
     void Robot::move(double dt) {

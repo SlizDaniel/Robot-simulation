@@ -15,8 +15,8 @@
       "length": 2.0
     },
     "velocity": {
-      "linearVelocity": 2.0,
-      "angularVelocity": 0.0
+      "linear_velocity": 2.0,
+      "angular_velocity": 0.0
     }
   },
   "obstacles": [

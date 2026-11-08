@@ -12,10 +12,10 @@ namespace robot_simulation{
         max_distance_(max_distance),
         min_distance_(min_distance),
         field_of_view_(field_of_view),
-        relativeToRobotPose_(to_robot_position){
+        relative_to_robot_pose_(to_robot_position){
             if(!std::isfinite(min_distance_) || !std::isfinite(max_distance_) ||
-                !std::isfinite(field_of_view_) || !std::isfinite(relativeToRobotPose_.x) ||
-                !std::isfinite(relativeToRobotPose_.y) || !std::isfinite(relativeToRobotPose_.theta)){
+                !std::isfinite(field_of_view_) || !std::isfinite(relative_to_robot_pose_.x) ||
+                !std::isfinite(relative_to_robot_pose_.y) || !std::isfinite(relative_to_robot_pose_.theta)){
                 throw std::invalid_argument("Sensor parameters must be finite");
             }
             if(min_distance_ < 0 || max_distance_ < 0){
@@ -32,11 +32,11 @@ namespace robot_simulation{
     Pose DistanceSensor::getWorldPose(const Pose& robot_pose) const {
         const double sin_theta = std::sin(robot_pose.theta);
         const double cos_theta = std::cos(robot_pose.theta);
-        const double dx = relativeToRobotPose_.x * cos_theta -
-                    sin_theta * relativeToRobotPose_.y;
-        const double dy = relativeToRobotPose_.y * cos_theta +
-                    sin_theta * relativeToRobotPose_.x;
-        return (Pose{robot_pose.x + dx, robot_pose.y + dy, robot_pose.theta + relativeToRobotPose_.theta});
+        const double dx = relative_to_robot_pose_.x * cos_theta -
+                    sin_theta * relative_to_robot_pose_.y;
+        const double dy = relative_to_robot_pose_.y * cos_theta +
+                    sin_theta * relative_to_robot_pose_.x;
+        return (Pose{robot_pose.x + dx, robot_pose.y + dy, robot_pose.theta + relative_to_robot_pose_.theta});
     }
 
     RaycastResult DistanceSensor::nearestObstacleDetected (const Environment& environment, int ray_count,

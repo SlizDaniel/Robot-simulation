@@ -23,8 +23,8 @@ namespace robot_simulation{
         EXPECT_DOUBLE_EQ(actual_pose.x, pose.x);
         EXPECT_DOUBLE_EQ(actual_pose.y, pose.y);
         EXPECT_DOUBLE_EQ(actual_pose.theta, pose.theta);
-        EXPECT_DOUBLE_EQ(actual_velocity.linearVelocity, velocity.linearVelocity);
-        EXPECT_DOUBLE_EQ(actual_velocity.angularVelocity, velocity.angularVelocity);
+        EXPECT_DOUBLE_EQ(actual_velocity.linear_velocity, velocity.linear_velocity);
+        EXPECT_DOUBLE_EQ(actual_velocity.angular_velocity, velocity.angular_velocity);
         EXPECT_DOUBLE_EQ(actual_size.width, size.width);
         EXPECT_DOUBLE_EQ(actual_size.length, size.length);
     }
@@ -175,8 +175,8 @@ namespace robot_simulation{
 
         const Velocity actual_velocity = robot.getVelocity();
 
-        EXPECT_DOUBLE_EQ(actual_velocity.linearVelocity, 0.0);
-        EXPECT_DOUBLE_EQ(actual_velocity.angularVelocity, 0.0);
+        EXPECT_DOUBLE_EQ(actual_velocity.linear_velocity, 0.0);
+        EXPECT_DOUBLE_EQ(actual_velocity.angular_velocity, 0.0);
     }
 
     TEST(RobotTests, TrajectoryStartsWithInitialPose){
@@ -251,8 +251,8 @@ namespace robot_simulation{
         robot.setVelocity(3.0, -0.25);
         const Velocity actual_velocity = robot.getVelocity();
 
-        EXPECT_DOUBLE_EQ(actual_velocity.linearVelocity, 3.0);
-        EXPECT_DOUBLE_EQ(actual_velocity.angularVelocity, -0.25);
+        EXPECT_DOUBLE_EQ(actual_velocity.linear_velocity, 3.0);
+        EXPECT_DOUBLE_EQ(actual_velocity.angular_velocity, -0.25);
     }
 
     TEST(RobotTests, SetVelocityAcceptsAngularVelocityAtLimits){
@@ -269,8 +269,8 @@ namespace robot_simulation{
         EXPECT_THROW(robot.setVelocity(3.0, 2.0 * pi + 0.01), std::invalid_argument);
 
         const Velocity actual_velocity = robot.getVelocity();
-        EXPECT_DOUBLE_EQ(actual_velocity.linearVelocity, 1.0);
-        EXPECT_DOUBLE_EQ(actual_velocity.angularVelocity, 0.5);
+        EXPECT_DOUBLE_EQ(actual_velocity.linear_velocity, 1.0);
+        EXPECT_DOUBLE_EQ(actual_velocity.angular_velocity, 0.5);
     }
 
     TEST(RobotTests, SetVelocityRejectsNonFiniteValues){
@@ -280,8 +280,8 @@ namespace robot_simulation{
 
         EXPECT_THROW(robot.setVelocity(nan, 0.0), std::invalid_argument);
         EXPECT_THROW(robot.setVelocity(0.0, infinity), std::invalid_argument);
-        EXPECT_DOUBLE_EQ(robot.getVelocity().linearVelocity, 1.0);
-        EXPECT_DOUBLE_EQ(robot.getVelocity().angularVelocity, 0.5);
+        EXPECT_DOUBLE_EQ(robot.getVelocity().linear_velocity, 1.0);
+        EXPECT_DOUBLE_EQ(robot.getVelocity().angular_velocity, 0.5);
     }
 
     TEST(RobotTests, UpdatedVelocityAffectsSubsequentMovement){

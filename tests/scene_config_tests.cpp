@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 #include <robot_simulation/scene_config.hpp>
+#include <array>
+#include <utility>
 
 namespace robot_simulation {
 TEST(SceneConfigTests, ParsesCompleteDefaultConfiguration) {
@@ -8,7 +10,7 @@ TEST(SceneConfigTests, ParsesCompleteDefaultConfiguration) {
         {"robot", {
             {"pose", {{"x", -8.0}, {"y", 0.0}, {"theta", 0.0}}},
             {"size", {{"width", 1.5}, {"length", 2.0}}},
-            {"velocity", {{"linearVelocity", 2.0}, {"angularVelocity", 0.0}}}
+            {"velocity", {{"linear_velocity", 2.0}, {"angular_velocity", 0.0}}}
         }},
         {"obstacles", {{{
             "pose", {{"x", 8.0}, {"y", 0.0}, {"theta", 0.0}}
@@ -29,7 +31,7 @@ TEST(SceneConfigTests, ParsesCompleteDefaultConfiguration) {
     EXPECT_DOUBLE_EQ(config.environment_size.length, 30.0);
     EXPECT_DOUBLE_EQ(config.robot.pose.x, -8.0);
     EXPECT_DOUBLE_EQ(config.robot.size.length, 2.0);
-    EXPECT_DOUBLE_EQ(config.robot.velocity.linearVelocity, 2.0);
+    EXPECT_DOUBLE_EQ(config.robot.velocity.linear_velocity, 2.0);
     ASSERT_EQ(config.obstacles.size(), 1U);
     EXPECT_DOUBLE_EQ(config.obstacles[0].pose.x, 8.0);
     EXPECT_DOUBLE_EQ(config.obstacles[0].size.width, 4.0);
@@ -53,7 +55,7 @@ TEST(SceneConfigTests, SerializesCompleteConfiguration) {
     const json json_data = json::parse(ConfigurationToJson(config));
 
     EXPECT_EQ(json_data.at("environment").at("width"), 12.0);
-    EXPECT_EQ(json_data.at("robot").at("velocity").at("linearVelocity"), 2.0);
+    EXPECT_EQ(json_data.at("robot").at("velocity").at("linear_velocity"), 2.0);
     ASSERT_EQ(json_data.at("obstacles").size(), 2U);
     EXPECT_EQ(json_data.at("obstacles").at(1).at("pose").at("y"), 3.0);
     EXPECT_EQ(json_data.at("simulation").at("ray_count"), 3);
@@ -62,5 +64,82 @@ TEST(SceneConfigTests, SerializesCompleteConfiguration) {
     const SceneConfig parsed_config = parseJsonToSimulationConfiguration(json_data);
     EXPECT_DOUBLE_EQ(parsed_config.robot.size.width, config.robot.size.width);
     EXPECT_DOUBLE_EQ(parsed_config.obstacles[1].size.length, config.obstacles[1].size.length);
+}
+
+TEST(SceneConfigTests, SerializesSnapshotWithoutUpdate) {
+    const SimulationSnapshot snapshot {
+        {1.5, -2.0, 0.25},
+        {3.0, -0.5},
+        7U,
+        3.5,
+        false,
+        std::nullopt
+    };
+
+    const json json_data = json::parse(SnapshotToJson(snapshot));
+
+    EXPECT_EQ(json_data.at("robot_pose").at("x"), 1.5);
+    EXPECT_EQ(json_data.at("robot_pose").at("y"), -2.0);
+    EXPECT_EQ(json_data.at("robot_pose").at("theta"), 0.25);
+    EXPECT_EQ(json_data.at("robot_velocity").at("linear_velocity"), 3.0);
+    EXPECT_EQ(json_data.at("robot_velocity").at("angular_velocity"), -0.5);
+    EXPECT_EQ(json_data.at("simulation_step"), 7U);
+    EXPECT_EQ(json_data.at("simulation_time"), 3.5);
+    EXPECT_FALSE(json_data.at("stopped"));
+    EXPECT_TRUE(json_data.at("update").is_null());
+}
+
+TEST(SceneConfigTests, SerializesSnapshotWithUpdateAndRaycastResults) {
+    const SimulationSnapshot snapshot {
+        {4.0, 5.0, 1.0},
+        {0.0, 0.0},
+        2U,
+        1.0,
+        true,
+        SimulationUpdate {
+            StopReason::ObstacleCollision,
+            false,
+            {
+                {true, 2.5, DetectionType::OBJECTDETECTED},
+                {false, 20.0, DetectionType::OBJECTOUTOFRANGE},
+                {false, infinity, DetectionType::NOOBJECTDETECTED}
+            }
+        }
+    };
+
+    const json json_data = json::parse(SnapshotToJson(snapshot));
+    const json& json_update = json_data.at("update");
+    const json& raycast_results = json_update.at("raycast_results");
+
+    EXPECT_TRUE(json_data.at("stopped"));
+    EXPECT_EQ(json_update.at("stop_reason"), "ObstacleCollision");
+    EXPECT_FALSE(json_update.at("step_accepted"));
+    ASSERT_EQ(raycast_results.size(), 3U);
+    EXPECT_TRUE(raycast_results.at(0).at("object_detected"));
+    EXPECT_EQ(raycast_results.at(0).at("distance_to_object"), 2.5);
+    EXPECT_EQ(raycast_results.at(0).at("detection_type"), "OBJECTDETECTED");
+    EXPECT_FALSE(raycast_results.at(1).at("object_detected"));
+    EXPECT_EQ(raycast_results.at(1).at("detection_type"), "OBJECTOUTOFRANGE");
+    EXPECT_FALSE(raycast_results.at(2).at("object_detected"));
+    EXPECT_TRUE(raycast_results.at(2).at("distance_to_object").is_null());
+    EXPECT_EQ(raycast_results.at(2).at("detection_type"), "NOOBJECTDETECTED");
+}
+
+TEST(SceneConfigTests, SerializesAllStopReasons) {
+    const std::array<std::pair<StopReason, const char*>, 3> stop_reasons = {{
+        {StopReason::None, "None"},
+        {StopReason::OutOfEnvironment, "OutOfEnvironment"},
+        {StopReason::ObstacleCollision, "ObstacleCollision"}
+    }};
+
+    for (const auto& [stop_reason, expected_name] : stop_reasons) {
+        const SimulationSnapshot snapshot {
+            {}, {}, 0U, 0.0, false,
+            SimulationUpdate {stop_reason, true, {}}
+        };
+
+        const json json_data = json::parse(SnapshotToJson(snapshot));
+        EXPECT_EQ(json_data.at("update").at("stop_reason"), expected_name);
+    }
 }
 }  // namespace robot_simulation

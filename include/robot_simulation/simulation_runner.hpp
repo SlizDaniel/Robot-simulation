@@ -1,6 +1,8 @@
+#pragma once
 #include <robot_simulation/types.hpp>
 #include <robot_simulation/scene_config.hpp>
 #include <robot_simulation/simulation.hpp>
+#include <robot_simulation/simulation_snapshot.hpp>
 #include <memory>
 
 namespace robot_simulation {
@@ -23,7 +25,9 @@ namespace robot_simulation {
         double getSimulationTime() const;
 
         bool isStopped() const;
-        
+
+        SimulationSnapshot getSimulationSnapshot() const;
+
         private:
         struct Session;
         std::unique_ptr<Session> session_;

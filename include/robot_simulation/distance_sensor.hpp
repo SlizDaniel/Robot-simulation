@@ -25,7 +25,7 @@ class DistanceSensor{
         double max_distance_;
         double min_distance_;
         double field_of_view_;
-        Pose relativeToRobotPose_;
+        Pose relative_to_robot_pose_;
 
         public:
 
@@ -36,7 +36,7 @@ class DistanceSensor{
 
         double getSensorMinDistance () const {return min_distance_;}
 
-        const Pose getRelativeToRobotPose () const {return relativeToRobotPose_;}
+        const Pose getRelativeToRobotPose () const {return relative_to_robot_pose_;}
 
         Pose getWorldPose (const Pose& robot_pose) const;
 
@@ -53,7 +53,7 @@ class DistanceSensor{
             if (!std::isfinite(theta)){
                 throw std::invalid_argument("Sensor rotation must be finite");
             }
-            relativeToRobotPose_.theta = theta;
+            relative_to_robot_pose_.theta = theta;
         }
     };
 }

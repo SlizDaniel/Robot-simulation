@@ -38,22 +38,22 @@ namespace robot_simulation {
         Velocity setNewVelocities(double left_sensor_distance, double right_sensor_distance,
                                   Velocity current_velocity, double velocity_gain_critical){
             if (left_sensor_distance > right_sensor_distance){
-                if (current_velocity.angularVelocity <= 0){
-                    return {-velocity_gain_critical * current_velocity.linearVelocity,
-                        -current_velocity.angularVelocity * velocity_gain_critical / 4};
+                if (current_velocity.angular_velocity <= 0){
+                    return {-velocity_gain_critical * current_velocity.linear_velocity,
+                        -current_velocity.angular_velocity * velocity_gain_critical / 4};
                 }
                 else {
-                    return {-velocity_gain_critical * current_velocity.linearVelocity,
+                    return {-velocity_gain_critical * current_velocity.linear_velocity,
                         -pi * velocity_gain_critical / 2};
                 }
             }
             if (left_sensor_distance <= right_sensor_distance) {
-                if (current_velocity.angularVelocity <= 0) {
-                    return {-velocity_gain_critical * current_velocity.linearVelocity,
-                        current_velocity.angularVelocity * velocity_gain_critical / 4};
+                if (current_velocity.angular_velocity <= 0) {
+                    return {-velocity_gain_critical * current_velocity.linear_velocity,
+                        current_velocity.angular_velocity * velocity_gain_critical / 4};
                 } 
                 else {
-                    return {-velocity_gain_critical * current_velocity.linearVelocity,
+                    return {-velocity_gain_critical * current_velocity.linear_velocity,
                         pi * velocity_gain_critical / 2};
                 }
             }
@@ -102,8 +102,8 @@ namespace robot_simulation {
             velocity_correction = setNewVelocities(left_sensor_distance, right_sensor_distance,
                 current_robot_velocity, velocity_gain_critical_);
         }
-        return {current_robot_velocity.linearVelocity + velocity_correction.linearVelocity,
-                std::clamp(current_robot_velocity.angularVelocity + velocity_correction.angularVelocity,
+        return {current_robot_velocity.linear_velocity + velocity_correction.linear_velocity,
+                std::clamp(current_robot_velocity.angular_velocity + velocity_correction.angular_velocity,
                     -2.0 * pi, 2.0 * pi)};
     }
 }//robot_simulation
