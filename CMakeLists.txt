@@ -88,7 +88,9 @@ target_link_libraries(robot_simulator_tests
         GTest::gtest_main
 )
 
-include(FetchContent)
+include(GoogleTest)
+gtest_discover_tests(robot_simulator_tests)
+endif()
 
 set(HTTPLIB_INSTALL OFF CACHE BOOL "" FORCE)
 set(HTTPLIB_TEST OFF CACHE BOOL "" FORCE)
@@ -110,7 +112,3 @@ target_link_libraries(robot_simulator_server
     robot_simulator
     httplib::httplib
 )
-
-include(GoogleTest)
-gtest_discover_tests(robot_simulator_tests)
-endif()
