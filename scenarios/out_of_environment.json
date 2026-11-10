@@ -1,0 +1,31 @@
+{
+  "environment": {
+    "width": 6.0,
+    "length": 6.0
+  },
+  "robot": {
+    "pose": {
+      "x": 0.0,
+      "y": 0.0,
+      "theta": 0.0
+    },
+    "size": {
+      "width": 1.0,
+      "length": 1.0
+    },
+    "velocity": {
+      "linear_velocity": 4.0,
+      "angular_velocity": 0.0
+    }
+  },
+  "obstacles": [],
+  "simulation": {
+    "dt": 1.0,
+    "ray_count": 3
+  },
+  "controller": {
+    "safe_distance": 0.0,
+    "critical_distance": 0.0,
+    "velocity_gain_critical": 0.0
+  }
+}
