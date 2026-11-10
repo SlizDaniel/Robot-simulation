@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace {
     struct ServerState {
@@ -69,6 +70,29 @@ int main() {
             const auto snapshot_json = robot_simulation::SnapshotToJson(
                 state.runner->getSimulationSnapshot());
             res.set_content(snapshot_json, "application/json");
+        });
+
+        server.Get("/api/simulation/config", [&state](const httplib::Request&, httplib::Response& res) {
+            robot_simulation::SceneConfig config;
+            std::vector<robot_simulation::SensorDescription> sensors;
+
+            {
+                std::lock_guard<std::mutex> lock(state.mutex);
+
+                if (!state.runner) {
+                    res.status = 409;
+                    res.set_content(
+                        robot_simulation::json{{"error", "Simulation is not initialized"}}.dump(),
+                        "application/json");
+                    return;
+                }
+
+                config = state.runner->getSceneConfig();
+                sensors = state.runner->getSensorDescriptions();
+            }
+
+            res.set_content(robot_simulation::ConfigurationWithSensorsToJson(config, sensors),
+                            "application/json");
         });
 
         server.Post("/api/simulation/step", [&state](const httplib::Request&, httplib::Response& res) {

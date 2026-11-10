@@ -23,7 +23,7 @@ Projekt zawiera bibliotekę C++, aplikację demonstracyjną działającą w term
 - konfigurowalny układ trzech przednich czujników odległości;
 - polimorficzny kontroler reaktywnego unikania przeszkód;
 - aplikacja konsolowa prezentująca przebieg symulacji i pomiary czujnika;
-- 177 testów jednostkowych.
+- 195 testów jednostkowych.
 
 ## Co nowego w v0.4
 
@@ -121,7 +121,7 @@ Po skonfigurowaniu projektu z `BUILD_TESTING=ON` wykonaj:
 ctest --test-dir build --output-on-failure
 ```
 
-Projekt zawiera 177 testów:
+Projekt zawiera 195 testów:
 
 | Obszar | Liczba testów |
 | --- | ---: |
@@ -133,9 +133,22 @@ Projekt zawiera 177 testów:
 | symulacja | 19 |
 | kontroler unikania przeszkód | 17 |
 | konfiguracja przednich czujników | 3 |
-| **razem** | **177** |
+| konfiguracja sceny i serializacja | 6 |
+| runner symulacji | 12 |
+| **razem** | **195** |
 
 Testy obejmują między innymi walidację wymiarów i kroku czasowego, ruch prostoliniowy i kołowy, obrócone prostokąty, SAT, granice środowiska, ray-casting przeszkód i granic, zasięgi czujnika, integrację czujników z symulacją, historię trajektorii oraz liczniki czasu i kroków.
+
+## HTTP API symulacji
+
+Po zbudowaniu uruchom `./build/robot_simulator_server` z katalogu głównego projektu. Serwer nasłuchuje na `127.0.0.1:8080`.
+
+- `POST /api/simulation/init` przyjmuje scenę w formacie `scenarios/defaul.json` i tworzy sesję.
+- `GET /api/simulation/config` zwraca konfigurację aktywnej sceny oraz tablicę `sensors`. Przed inicjalizacją zwraca `409` z polem `error`.
+- `GET /api/simulation/state` zwraca bieżący stan, a `POST /api/simulation/step` wykonuje krok.
+- `POST /api/simulation/reset` odtwarza ostatnio załadowaną scenę.
+
+Każdy wpis `sensors` zawiera `id`, `role`, `relative_pose` (`x`, `y`, `theta`), `min_distance`, `max_distance` i `field_of_view`. Kąty są w radianach. Obecne role to kolejno `front_left`, `front` i `front_right`; opisy pochodzą z czujników faktycznie zamontowanych na robocie. Każdy wpis `update.raycast_results` ma `sensor_id` odpowiadający `id` w `sensors`. Jeden wynik opisuje zbiorczy pomiar czujnika, a nie poszczególne promienie.
 
 ## Model danych
 

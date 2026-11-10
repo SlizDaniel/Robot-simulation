@@ -26,6 +26,13 @@ def server():
         assert state_response.status_code == 409
         assert state_response.json()["error"] != None
 
+        config_response = requests.get(
+            f"{BASE_URL}/api/simulation/config",
+            timeout=5
+        )
+        assert config_response.status_code == 409
+        assert "error" in config_response.json()
+
         yield BASE_URL
 
     except requests.RequestException as error:

@@ -3,7 +3,9 @@
 #include <robot_simulation/scene_config.hpp>
 #include <robot_simulation/simulation.hpp>
 #include <robot_simulation/simulation_snapshot.hpp>
+#include <robot_simulation/sensor_description.hpp>
 #include <memory>
+#include <vector>
 
 namespace robot_simulation {
     class SimulationRunner{
@@ -27,6 +29,10 @@ namespace robot_simulation {
         bool isStopped() const;
 
         SimulationSnapshot getSimulationSnapshot() const;
+
+        SceneConfig getSceneConfig() const;
+
+        std::vector<SensorDescription> getSensorDescriptions() const;
 
         private:
         struct Session;

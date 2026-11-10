@@ -98,4 +98,27 @@ namespace robot_simulation{
             session_->last_update
         };
     }
+
+    SceneConfig SimulationRunner::getSceneConfig() const {return config_;}
+
+    std::vector<SensorDescription> SimulationRunner::getSensorDescriptions() const {
+        const auto& sensors = session_->robot.getDistanceSensors();
+        const auto describe = [&sensors](const SensorInfo& info, const char* role) {
+            const DistanceSensor& sensor = sensors.at(info.id);
+            return SensorDescription{
+                info.id,
+                role,
+                sensor.getRelativeToRobotPose(),
+                sensor.getSensorMinDistance(),
+                sensor.getSensorMaxDistance(),
+                sensor.getSensorFieldOfView()
+            };
+        };
+
+        return {
+            describe(session_->front_sensors.front_lef_sensor, "front_left"),
+            describe(session_->front_sensors.front_sensor, "front"),
+            describe(session_->front_sensors.front_right_sensor, "front_right")
+        };
+    }
 }//robot_simulation
