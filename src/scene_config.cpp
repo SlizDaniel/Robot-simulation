@@ -2,6 +2,7 @@
 #include <robot_simulation/types.hpp>
 #include <vector>
 #include <string>
+#include <utility>
 
 namespace robot_simulation{
     namespace {
@@ -124,6 +125,24 @@ namespace robot_simulation{
         return json_data.dump(2);
     }
 
+    std::string ConfigurationWithSensorsToJson(const SceneConfig& config,
+        const std::vector<SensorDescription>& sensors) {
+        json json_data = json::parse(ConfigurationToJson(config));
+        json json_sensors = json::array();
+        for (const SensorDescription& sensor : sensors) {
+            json_sensors.push_back({
+                {"id", sensor.id},
+                {"role", sensor.role},
+                {"relative_pose", poseToJson(sensor.relative_pose)},
+                {"min_distance", sensor.min_distance},
+                {"max_distance", sensor.max_distance},
+                {"field_of_view", sensor.field_of_view}
+            });
+        }
+        json_data["sensors"] = std::move(json_sensors);
+        return json_data.dump(2);
+    }
+
     std::string SnapshotToJson (const SimulationSnapshot& snapshot){
         const auto stop_reason_to_string = [](StopReason stop_reason) {
             switch (stop_reason) {
@@ -154,8 +173,11 @@ namespace robot_simulation{
         json json_update = nullptr;
         if (snapshot.update) {
             json raycast_results = json::array();
-            for (const RaycastResult& result : snapshot.update->raycast_results) {
+            for (std::size_t sensor_id = 0;
+                 sensor_id < snapshot.update->raycast_results.size(); ++sensor_id) {
+                const RaycastResult& result = snapshot.update->raycast_results[sensor_id];
                 raycast_results.push_back({
+                    {"sensor_id", sensor_id},
                     {"object_detected", result.object_detected},
                     {"distance_to_object", result.distance_to_object},
                     {"detection_type", detection_type_to_string(result.detection_type)}

@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <robot_simulation/simulation_runner.hpp>
+#include <robot_simulation/math_constants.hpp>
 
 #include <stdexcept>
 
@@ -34,6 +35,47 @@ TEST(SimulationRunnerTests, StartsWithConfigurationState) {
     EXPECT_EQ(runner.getSimulationStep(), 0U);
     EXPECT_DOUBLE_EQ(runner.getSimulationTime(), 0.0);
     EXPECT_FALSE(runner.isStopped());
+}
+
+TEST(SimulationRunnerTests, ExposesConfigurationAsIndependentCopy) {
+    const SceneConfig config = makeConfig();
+    SimulationRunner runner(config);
+
+    SceneConfig exposed = runner.getSceneConfig();
+    exposed.robot.pose.x = 42.0;
+    runner.update();
+
+    EXPECT_DOUBLE_EQ(runner.getSceneConfig().robot.pose.x, config.robot.pose.x);
+    EXPECT_DOUBLE_EQ(runner.getSceneConfig().dt, config.dt);
+}
+
+TEST(SimulationRunnerTests, DescribesMountedSensorsInMeasurementOrder) {
+    SimulationRunner runner(makeConfig());
+    const std::vector<SensorDescription> sensors = runner.getSensorDescriptions();
+
+    ASSERT_EQ(sensors.size(), 3U);
+    EXPECT_EQ(sensors[0].role, "front_left");
+    EXPECT_EQ(sensors[1].role, "front");
+    EXPECT_EQ(sensors[2].role, "front_right");
+    for (std::size_t i = 0; i < sensors.size(); ++i) {
+        EXPECT_EQ(sensors[i].id, i);
+        EXPECT_DOUBLE_EQ(sensors[i].relative_pose.x, 0.0);
+        EXPECT_DOUBLE_EQ(sensors[i].relative_pose.y, 0.0);
+        EXPECT_DOUBLE_EQ(sensors[i].min_distance, 0.0);
+        EXPECT_DOUBLE_EQ(sensors[i].max_distance, 20.0);
+        EXPECT_DOUBLE_EQ(sensors[i].field_of_view, pi / 2.0);
+    }
+    EXPECT_NEAR(sensors[0].relative_pose.theta, pi / 4.0, tolerance);
+    EXPECT_DOUBLE_EQ(sensors[1].relative_pose.theta, 0.0);
+    EXPECT_NEAR(sensors[2].relative_pose.theta, -pi / 4.0, tolerance);
+
+    const SimulationUpdate update = runner.update();
+    ASSERT_EQ(update.raycast_results.size(), sensors.size());
+    const json snapshot_json = json::parse(SnapshotToJson(runner.getSimulationSnapshot()));
+    const json& results = snapshot_json.at("update").at("raycast_results");
+    for (std::size_t i = 0; i < sensors.size(); ++i) {
+        EXPECT_EQ(results.at(i).at("sensor_id"), sensors[i].id);
+    }
 }
 
 TEST(SimulationRunnerTests, SnapshotCanBeSerializedBeforeFirstStep) {

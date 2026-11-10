@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <robot_simulation/scene_config.hpp>
+#include <robot_simulation/math_constants.hpp>
 #include <array>
 #include <utility>
 
@@ -66,6 +67,29 @@ TEST(SceneConfigTests, SerializesCompleteConfiguration) {
     EXPECT_DOUBLE_EQ(parsed_config.obstacles[1].size.length, config.obstacles[1].size.length);
 }
 
+TEST(SceneConfigTests, SerializesSensorDescriptionsWithConfiguration) {
+    const SceneConfig config {
+        {12.0, 30.0},
+        {{-8.0, 0.0, 0.0}, {1.5, 2.0}, {2.0, 0.0}},
+        {}, 0.5, 3, {5.0, 2.0, 0.2}
+    };
+    const std::vector<SensorDescription> sensors {
+        {0U, "front_left", {0.0, 0.0, pi / 4.0}, 0.0, 20.0, pi / 2.0}
+    };
+
+    const json json_data = json::parse(ConfigurationWithSensorsToJson(config, sensors));
+
+    EXPECT_EQ(json_data.at("environment").at("length"), config.environment_size.length);
+    ASSERT_EQ(json_data.at("sensors").size(), 1U);
+    const json& sensor = json_data.at("sensors").at(0);
+    EXPECT_EQ(sensor.at("id"), 0U);
+    EXPECT_EQ(sensor.at("role"), "front_left");
+    EXPECT_EQ(sensor.at("relative_pose").at("theta"), pi / 4.0);
+    EXPECT_EQ(sensor.at("min_distance"), 0.0);
+    EXPECT_EQ(sensor.at("max_distance"), 20.0);
+    EXPECT_EQ(sensor.at("field_of_view"), pi / 2.0);
+}
+
 TEST(SceneConfigTests, SerializesSnapshotWithoutUpdate) {
     const SimulationSnapshot snapshot {
         {1.5, -2.0, 0.25},
@@ -115,12 +139,15 @@ TEST(SceneConfigTests, SerializesSnapshotWithUpdateAndRaycastResults) {
     EXPECT_EQ(json_update.at("stop_reason"), "ObstacleCollision");
     EXPECT_FALSE(json_update.at("step_accepted"));
     ASSERT_EQ(raycast_results.size(), 3U);
+    EXPECT_EQ(raycast_results.at(0).at("sensor_id"), 0U);
     EXPECT_TRUE(raycast_results.at(0).at("object_detected"));
     EXPECT_EQ(raycast_results.at(0).at("distance_to_object"), 2.5);
     EXPECT_EQ(raycast_results.at(0).at("detection_type"), "OBJECTDETECTED");
     EXPECT_FALSE(raycast_results.at(1).at("object_detected"));
+    EXPECT_EQ(raycast_results.at(1).at("sensor_id"), 1U);
     EXPECT_EQ(raycast_results.at(1).at("detection_type"), "OBJECTOUTOFRANGE");
     EXPECT_FALSE(raycast_results.at(2).at("object_detected"));
+    EXPECT_EQ(raycast_results.at(2).at("sensor_id"), 2U);
     EXPECT_TRUE(raycast_results.at(2).at("distance_to_object").is_null());
     EXPECT_EQ(raycast_results.at(2).at("detection_type"), "NOOBJECTDETECTED");
 }

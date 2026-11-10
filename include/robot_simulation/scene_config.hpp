@@ -1,6 +1,7 @@
 #pragma once
 #include <robot_simulation/types.hpp>
 #include <robot_simulation/simulation_snapshot.hpp>
+#include <robot_simulation/sensor_description.hpp>
 #include <vector>
 #include <nlohmann/json.hpp>
 #include <string>
@@ -40,6 +41,9 @@ struct SceneConfig {
 SceneConfig parseJsonToSimulationConfiguration (const json& json_data);
 
 std::string ConfigurationToJson (const SceneConfig& config);
+
+std::string ConfigurationWithSensorsToJson(const SceneConfig& config,
+    const std::vector<SensorDescription>& sensors);
 
 std::string SnapshotToJson (const SimulationSnapshot& snapshot);
 }//robot_simulation
