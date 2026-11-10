@@ -2,9 +2,9 @@
 
 Prosty symulator ruchu prostokątnego robota mobilnego w środowisku 2D, napisany w C++17. Projekt modeluje ruch prostoliniowy i po łuku, prostokątne przeszkody, granice środowiska oraz kolizje wykrywane algorytmem SAT (*Separating Axis Theorem*).
 
-Aktualna wersja: **0.4.0**.
+Aktualna wersja: **0.5.0**.
 
-Projekt zawiera bibliotekę C++, aplikację demonstracyjną działającą w terminalu oraz testy jednostkowe GoogleTest.
+Projekt zawiera bibliotekę C++, aplikację demonstracyjną, serwer HTTP, frontend Canvas 2D oraz testy GoogleTest, pytest i Playwright.
 
 ## Najważniejsze możliwości
 
@@ -23,7 +23,17 @@ Projekt zawiera bibliotekę C++, aplikację demonstracyjną działającą w term
 - konfigurowalny układ trzech przednich czujników odległości;
 - polimorficzny kontroler reaktywnego unikania przeszkód;
 - aplikacja konsolowa prezentująca przebieg symulacji i pomiary czujnika;
+- serwer HTTP udostępniający inicjalizację, stan, konfigurację, krok i reset symulacji;
+- edytor sceny i wizualizacja symulacji w przeglądarce;
 - 195 testów jednostkowych.
+
+## Co nowego w v0.5
+
+- `SceneConfig` i `SimulationRunner` łączą konfigurację sceny z sesją symulacji;
+- serwer C++ udostępnia endpointy `/api/simulation/init`, `/config`, `/state`, `/step` i `/reset` oraz serwuje frontend;
+- `/config` zwraca geometrię zamontowanych czujników, a pomiary zawierają odpowiadające im `sensor_id`;
+- frontend pozwala edytować scenę, sterować symulacją i oglądać pomiary oraz trajektorię;
+- testy API sprawdzają endpointy, a testy Playwright sprawdzają interfejs w Chromium, również z rzeczywistym serwerem C++.
 
 ## Co nowego w v0.4
 
@@ -53,7 +63,9 @@ W porównaniu z v0.2 dodano:
 
 - kompilator C++ obsługujący C++17;
 - CMake 3.16 lub nowszy;
-- dostęp do Internetu podczas pierwszej konfiguracji z testami, ponieważ CMake pobiera GoogleTest 1.14.0.
+- dostęp do Internetu podczas pierwszej konfiguracji, ponieważ CMake pobiera nlohmann/json 3.11.3 i cpp-httplib 0.60.1, a przy `BUILD_TESTING=ON` także GoogleTest 1.14.0;
+- do testów API: Python 3 z pakietami z `tests/api/requirements.txt`;
+- do testów interfejsu: Node.js, npm i Chromium zainstalowane przez Playwright.
 
 ## Budowanie projektu
 
@@ -63,7 +75,7 @@ W katalogu głównym projektu wykonaj:
 
 ```bash
 cmake -S . -B build -DBUILD_TESTING=ON
-cmake --build build
+cmake --build build --parallel
 ```
 
 Znaczenie katalogów:
@@ -73,11 +85,11 @@ Znaczenie katalogów:
 
 ### Budowanie bez testów
 
-Jeżeli chcesz zbudować tylko bibliotekę i aplikację, bez pobierania GoogleTest:
+Jeżeli chcesz zbudować bibliotekę, aplikację i serwer bez GoogleTest:
 
 ```bash
 cmake -S . -B build -DBUILD_TESTING=OFF
-cmake --build build
+cmake --build build --parallel
 ```
 
 ### Dostępne targety
@@ -86,6 +98,7 @@ cmake --build build
 | --- | --- | --- |
 | `robot_simulator` | biblioteka | model robota, środowiska, przeszkód, geometrii i symulacji |
 | `robot_simulator_app` | program | terminalowa demonstracja symulatora |
+| `robot_simulator_server` | program | HTTP API i serwowanie frontendu z `frontend/` |
 | `robot_simulator_tests` | program testowy | testy GoogleTest, dostępne przy `BUILD_TESTING=ON` |
 
 Wybrany target można zbudować osobno:
@@ -121,7 +134,27 @@ Po skonfigurowaniu projektu z `BUILD_TESTING=ON` wykonaj:
 ctest --test-dir build --output-on-failure
 ```
 
-Projekt zawiera 195 testów:
+Testy endpointów wymagają pakietów Pythona i zbudowanego `robot_simulator_server`:
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -r tests/api/requirements.txt
+.venv/bin/python -m pytest tests/api -q
+```
+
+Testy przeglądarkowe wymagają Chromium. `test:e2e` uruchamia własny proces serwera C++, dlatego port `127.0.0.1:8080` musi być wolny:
+
+```bash
+cd frontend
+npm ci
+npx playwright install chromium
+npm test
+npm run test:e2e
+```
+
+`npm test` sprawdza interfejs z deterministycznymi odpowiedziami API. `npm run test:e2e` używa rzeczywistego serwera C++ i nie uruchamia atrap endpointów. GitHub Actions wykonuje GoogleTest i pytest w jednym jobie, a testy Playwright w osobnym jobie z Chromium.
+
+Projekt zawiera 195 testów C++:
 
 | Obszar | Liczba testów |
 | --- | ---: |
@@ -149,6 +182,12 @@ Po zbudowaniu uruchom `./build/robot_simulator_server` z katalogu głównego pro
 - `POST /api/simulation/reset` odtwarza ostatnio załadowaną scenę.
 
 Każdy wpis `sensors` zawiera `id`, `role`, `relative_pose` (`x`, `y`, `theta`), `min_distance`, `max_distance` i `field_of_view`. Kąty są w radianach. Obecne role to kolejno `front_left`, `front` i `front_right`; opisy pochodzą z czujników faktycznie zamontowanych na robocie. Każdy wpis `update.raycast_results` ma `sensor_id` odpowiadający `id` w `sensors`. Jeden wynik opisuje zbiorczy pomiar czujnika, a nie poszczególne promienie.
+
+### Frontend
+
+Serwer udostępnia interfejs pod `http://127.0.0.1:8080/`. Po otwarciu strony frontend pobiera `/api/simulation/config` i `/api/simulation/state`, jeśli istnieje aktywna sesja; w przeciwnym razie pokazuje scenę domyślną do edycji. Formularz i przeciąganie na planszy zmieniają projekt sceny. Przycisk **Initialize** wysyła go jako JSON do `/api/simulation/init` i pobiera aktualną konfigurację oraz stan. **Step** wywołuje jeden `/api/simulation/step`, **Start** wysyła kolejne kroki sekwencyjnie, **Pause** zatrzymuje pętlę, a **Reset** wywołuje `/api/simulation/reset`.
+
+Plansza przedstawia geometrię, kierunki czujników, zbiorcze odległości i trajektorię z kroków wykonanych w bieżącej karcie. Po odświeżeniu strony stan serwera wraca przez `/state`, ale wcześniejsza trajektoria nie jest dostępna w API, więc jej rysowanie zaczyna się od aktualnej pozycji.
 
 ## Model danych
 
@@ -381,7 +420,9 @@ const auto& trajectory = robot.getTrajectory();
 ```text
 robot_simulator/
 ├── app/
-│   └── main.cpp                 Aplikacja demonstracyjna
+│   ├── main.cpp                 Aplikacja demonstracyjna
+│   └── server_main.cpp          Serwer HTTP
+├── frontend/                    Interfejs HTML, CSS i JavaScript
 ├── include/robot_simulation/    Publiczne nagłówki biblioteki
 ├── src/                         Implementacje biblioteki
 ├── tests/                       Testy GoogleTest i funkcje pomocnicze
@@ -390,7 +431,7 @@ robot_simulator/
 └── .gitignore                   Reguły ignorowania plików lokalnych
 ```
 
-## Ograniczenia v0.4
+## Ograniczenia
 
 - Kolizja jest sprawdzana dyskretnie dla stanu na końcu kroku. Przy dużym `dt`, dużej prędkości albo cienkiej przeszkodzie robot może przeskoczyć przez przeszkodę pomiędzy kolejnymi stanami.
 - Przy przewidzianej kolizji robot pozostaje w pozycji sprzed kroku. Symulator nie wyznacza dokładnego czasu ani punktu kontaktu.
@@ -399,7 +440,8 @@ robot_simulator/
 - Model pomiaru nie uwzględnia szumu ani błędów systematycznych.
 - Kontroler unikania jest reaktywny: nie planuje trasy do celu ani nie gwarantuje ominięcia każdej geometrii przeszkód przy dowolnym kroku czasowym i prędkości.
 - Aplikacja demonstracyjna nie przyjmuje jeszcze parametrów z wiersza poleceń ani pliku konfiguracyjnego.
-- Projekt nie zawiera jeszcze interfejsu graficznego ani zapisu sceny.
+- Serwer nie zachowuje aktywnej sesji po restarcie; frontend pozwala wyeksportować scenę do pliku JSON i ponownie ją zaimportować.
+- API zwraca zbiorczy wynik na czujnik, bez pozycji trafień poszczególnych promieni. Trajektoria na frontendzie obejmuje tylko kroki bieżącej karty.
 
 ## Możliwe kierunki rozwoju
 
@@ -407,8 +449,7 @@ robot_simulator/
 - dokładne wyznaczanie czasu i punktu kontaktu;
 - opcjonalny limit lub wyłączanie historii trajektorii;
 - konfiguracja sceny z argumentów programu lub pliku;
-- wizualizacja środowiska i trajektorii;
-- zapis i odczyt sceny;
+- trwałe zapisywanie sesji i trajektorii po stronie serwera;
 
 ## Licencja
 

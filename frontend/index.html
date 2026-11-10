@@ -3,85 +3,102 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Robot Simulator</title>
-  <style>
-    :root {
-      color-scheme: light;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      color: #172033;
-      background: #f4f7fb;
-    }
-
-    body {
-      display: grid;
-      min-height: 100vh;
-      margin: 0;
-      place-items: center;
-    }
-
-    main {
-      width: min(28rem, calc(100% - 3rem));
-      padding: 2rem;
-      border-radius: 1rem;
-      background: #fff;
-      box-shadow: 0 1rem 3rem rgb(23 32 51 / 12%);
-    }
-
-    h1 { margin-top: 0; }
-
-    button {
-      padding: .7rem 1rem;
-      border: 0;
-      border-radius: .5rem;
-      color: #fff;
-      background: #1769e0;
-      font: inherit;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    button:hover { background: #0e56bd; }
-    button:disabled { cursor: wait; opacity: .7; }
-
-    output {
-      display: block;
-      min-height: 1.5rem;
-      margin-top: 1rem;
-      padding: .75rem;
-      border-radius: .5rem;
-      background: #eef3fb;
-      white-space: pre-wrap;
-    }
-  </style>
+  <meta name="theme-color" content="#f5f3ee">
+  <title>Robot Simulator · Studio sceny</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
 </head>
 <body>
-  <main>
-    <h1>Robot Simulator</h1>
-    <button id="check-backend" type="button">Check backend</button>
-    <output id="backend-response" aria-live="polite">Kliknij przycisk, aby sprawdzić backend.</output>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">◈</span><div><strong>Robot Simulator</strong><small>STUDIO SCENY · v0.5</small></div></div>
+    <button id="reconnect" class="button button-quiet" type="button">Połącz / synchronizuj</button><div id="connection" class="connection" role="status"><span class="status-dot"></span>Łączenie z serwerem…</div>
+  </header>
+
+  <main class="workspace">
+    <aside class="panel editor" aria-labelledby="editor-heading">
+      <div class="panel-heading"><div><p class="eyebrow">01 / KONFIGURACJA</p><h1 id="editor-heading">Edytor sceny</h1></div><span id="draft-badge" class="badge">Scena domyślna</span></div>
+      <p class="hint">Zmień wartości lub przeciągnij obiekt na planszy. Initialize zastosuje projekt na serwerze.</p>
+
+      <div class="editor-tools">
+        <button id="import-scene" class="button button-quiet" type="button">Import JSON</button>
+        <button id="export-scene" class="button button-quiet" type="button">Eksport JSON</button>
+        <button id="undo" class="button button-quiet" type="button">↶ Cofnij</button>
+        <button id="discard" class="button button-quiet" type="button">Odrzuć zmiany</button>
+      </div>
+      <input id="scene-file" type="file" accept=".json,application/json" hidden>
+      <form id="scene-form" novalidate>
+        <fieldset><legend>Środowisko</legend><div class="fields two">
+          <label>Długość · X <input type="number" data-path="environment.length" min="0" step="any" required></label>
+          <label>Szerokość · Y <input type="number" data-path="environment.width" min="0" step="any" required></label>
+        </div></fieldset>
+
+        <fieldset><legend>Robot <span class="legend-note">punkt startowy</span></legend><div class="fields three">
+          <label>X <input type="number" data-path="robot.pose.x" step="any" required></label>
+          <label>Y <input type="number" data-path="robot.pose.y" step="any" required></label>
+          <label>θ · rad <input type="number" data-path="robot.pose.theta" step="any" required></label>
+        </div><div class="fields two spaced">
+          <label>Długość <input type="number" data-path="robot.size.length" min="0" step="any" required></label>
+          <label>Szerokość <input type="number" data-path="robot.size.width" min="0" step="any" required></label>
+        </div><div class="fields two spaced">
+          <label>Prędkość liniowa <input type="number" data-path="robot.velocity.linear_velocity" step="any" required></label>
+          <label>Prędkość kątowa <input type="number" data-path="robot.velocity.angular_velocity" step="any" required></label>
+        </div></fieldset>
+
+        <fieldset><legend>Symulacja</legend><div class="fields two">
+          <label>Krok dt <input type="number" data-path="simulation.dt" min="0" step="any" required></label>
+          <label>Promienie / czujnik <input type="number" data-path="simulation.ray_count" min="1" step="1" required></label>
+        </div><p class="field-help">Liczba promieni musi być dodatnia i nieparzysta.</p></fieldset>
+
+        <fieldset><legend>Kontroler</legend><div class="fields two">
+          <label>Strefa bezpieczna <input type="number" data-path="controller.safe_distance" min="0" step="any" required></label>
+          <label>Strefa krytyczna <input type="number" data-path="controller.critical_distance" min="0" step="any" required></label>
+        </div><div class="fields spaced">
+          <label>Wzmocnienie w strefie krytycznej <input type="number" data-path="controller.velocity_gain_critical" min="0" step="any" required></label>
+        </div></fieldset>
+
+        <fieldset><legend>Przeszkody</legend><div id="obstacle-list" class="obstacle-list"></div>
+          <button id="add-obstacle" class="button button-quiet full" type="button">+ Dodaj przeszkodę</button>
+        </fieldset>
+      </form>
+      <p id="editor-error" class="form-error" role="alert" hidden></p>
+      <button id="initialize" class="button button-primary full" type="button">Initialize <span aria-hidden="true">→</span></button>
+    </aside>
+
+    <section class="stage-column" aria-labelledby="stage-heading">
+      <div class="stage-heading"><div><p class="eyebrow">02 / PODGLĄD</p><h2 id="stage-heading">Scena robota</h2></div><div id="view-mode" class="view-mode">Podgląd projektu</div></div>
+      <div class="view-tools" aria-label="Ustawienia widoku">
+        <div><button id="zoom-out" class="button button-quiet" aria-label="Oddal">−</button>
+        <button id="fit-scene" class="button button-quiet">Dopasuj</button>
+        <button id="zoom-in" class="button button-quiet" aria-label="Przybliż">+</button></div>
+        <label><input id="show-grid" type="checkbox" checked> Siatka</label>
+        <label><input id="show-sensors" type="checkbox" checked> Czujniki</label>
+        <label><input id="show-trail" type="checkbox" checked> Ślad</label>
+        <label><input id="smooth-motion" type="checkbox" checked> Płynny ruch</label>
+      </div>
+      <div class="canvas-shell"><canvas id="scene-canvas" aria-label="Widok środowiska, robota, przeszkód i czujników"></canvas>
+        <div class="canvas-help">Przeciągnij obiekt · kółko: zoom · przeciągnij puste tło: przesuń widok</div>
+      </div>
+      <div class="legend" aria-label="Legenda planszy"><span><i class="swatch robot-swatch"></i> Robot</span><span><i class="swatch obstacle-swatch"></i> Przeszkoda</span><span><i class="swatch sensor-swatch"></i> Czujnik</span><span><i class="swatch trail-swatch"></i> Trajektoria</span></div>
+
+      <div class="panel controls"><div class="controls-title"><div><p class="eyebrow">03 / STEROWANIE</p><h2>Symulacja</h2></div><span id="run-state" class="run-state">Nie zainicjowano</span></div>
+        <div class="control-buttons">
+          <button id="start" class="button button-dark" type="button">▶ Start</button>
+          <button id="pause" class="button button-quiet" type="button">Ⅱ Pause</button>
+          <button id="step" class="button button-quiet" type="button">↦ Step</button>
+          <button id="reset" class="button button-quiet" type="button">↺ Reset</button>
+        </div>
+        <label class="tempo">Tempo odtwarzania <select id="pace"><option value="700">Spokojne · 0,7 s</option><option value="350" selected>Normalne · 0,35 s</option><option value="100">Szybkie · 0,1 s</option></select></label>
+        <p id="message" class="message" role="status" aria-live="polite">Połącz z serwerem i zainicjuj scenę.</p>
+      </div>
+    </section>
+
+    <aside class="panel telemetry" aria-labelledby="telemetry-heading"><div class="panel-heading"><div><p class="eyebrow">04 / TELEMETRIA</p><h2 id="telemetry-heading">Stan na żywo</h2></div></div>
+      <p id="telemetry-context" class="hint">Dane aktywnej sesji</p><div class="metric-grid"><div class="metric"><span>Krok</span><strong id="metric-step">—</strong></div><div class="metric"><span>Czas</span><strong id="metric-time">—</strong><small>jedn. czasu</small></div></div>
+      <div class="readout"><h3>Robot</h3><dl><div><dt>Pozycja</dt><dd id="metric-position">—</dd></div><div><dt>Kierunek</dt><dd id="metric-heading">—</dd></div><div><dt>Prędkość liniowa</dt><dd id="metric-linear">—</dd></div><div><dt>Prędkość kątowa</dt><dd id="metric-angular">—</dd></div></dl></div>
+      <div class="readout"><div class="readout-title"><h3>Czujniki</h3><small>zbiorczy pomiar</small></div><div id="sensor-list" class="sensor-list"><p class="muted">Dane pojawią się po inicjalizacji.</p></div></div>
+      <div class="readout"><h3>Ostatni krok</h3><p id="stop-reason" class="event-text">Brak pomiaru.</p></div>
+      <p class="telemetry-note">Wycinki pokazują pełne pole widzenia i zasięg. Odległość jest najbliższym echem w całym wycinku; API nie podaje punktu trafienia. Ślad obejmuje do 5000 ostatnich pozycji z tej karty.</p>
+    </aside>
   </main>
-
-  <script>
-    const button = document.querySelector('#check-backend');
-    const response = document.querySelector('#backend-response');
-
-    button.addEventListener('click', async () => {
-      button.disabled = true;
-      response.textContent = 'Sprawdzanie…';
-
-      try {
-        const result = await fetch('/api/health');
-        if (!result.ok) {
-          throw new Error(`HTTP ${result.status}`);
-        }
-
-        response.textContent = JSON.stringify(await result.json(), null, 2);
-      } catch (error) {
-        response.textContent = `Nie można połączyć się z backendem: ${error.message}`;
-      } finally {
-        button.disabled = false;
-      }
-    });
-  </script>
 </body>
 </html>

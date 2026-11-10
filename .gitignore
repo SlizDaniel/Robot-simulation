@@ -25,8 +25,8 @@ venv/
 *.dll
 *.exe
 
-# VS Code local index
-.vscode/browse.vc.db*
+# Local editor configuration and indexes
+.vscode/
 
 # Temporary files
 *~

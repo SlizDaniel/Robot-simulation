@@ -22,3 +22,27 @@ jobs:
         run: python -m pip install -r tests/api/requirements.txt
       - name: Test API
         run: python -m pytest tests/api -q
+
+  playwright-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Configure server
+        run: cmake -S . -B build -DBUILD_TESTING=OFF
+      - name: Build server
+        run: cmake --build build --target robot_simulator_server --parallel
+      - name: Install frontend test dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Install Chromium and system dependencies
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+      - name: Test frontend interactions
+        working-directory: frontend
+        run: npm test
+      - name: Test frontend against C++ server
+        working-directory: frontend
+        run: npm run test:e2e

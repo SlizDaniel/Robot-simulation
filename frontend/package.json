@@ -1,0 +1,9 @@
+{
+  "name": "robot-simulator-frontend",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/ui.test.cjs",
+    "test:e2e": "node --test tests/real-backend.test.cjs"
+  },
+  "devDependencies": { "playwright": "1.65.0" }
+}
