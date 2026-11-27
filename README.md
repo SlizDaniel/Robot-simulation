@@ -1,148 +1,61 @@
 # Robot Simulator
 
-Prosty symulator ruchu prostokątnego robota mobilnego w środowisku 2D, napisany w C++17. Projekt modeluje ruch prostoliniowy i po łuku, prostokątne przeszkody, granice środowiska oraz kolizje wykrywane algorytmem SAT (*Separating Axis Theorem*).
+A C++17 simulator for a rectangular mobile robot in a 2D world. It includes a reusable library, a terminal demo, an HTTP server, and a browser scene editor. The robot can drive straight or along an arc, sense obstacles and walls with simulated distance sensors, and use a reactive obstacle avoidance controller.
 
-Aktualna wersja: **0.5.0**.
+## Build
 
-Projekt zawiera bibliotekę C++, aplikację demonstracyjną, serwer HTTP, frontend Canvas 2D oraz testy GoogleTest, pytest i Playwright.
+You need a C++17 compiler and CMake 3.16 or newer. CMake downloads nlohmann/json, cpp-httplib, and (when tests are enabled) GoogleTest during the first configuration.
 
-## Najważniejsze możliwości
-
-- ruch robota prostoliniowy i po łuku;
-- zmiana prędkości liniowej i kątowej podczas działania;
-- obliczanie wierzchołków obróconego robota i przeszkód;
-- wykrywanie kolizji obróconych prostokątów algorytmem SAT;
-- sprawdzanie, czy cały obrys robota pozostaje w środowisku;
-- przewidywanie następnej pozycji bez modyfikowania stanu robota;
-- odrzucanie kroku prowadzącego do kolizji lub opuszczenia środowiska;
-- wykonywanie pojedynczych kroków lub serii kroków;
-- zliczanie zaakceptowanych kroków i czasu symulacji;
-- zapisywanie historii zaakceptowanej trajektorii;
-- symulowane czujniki odległości wykorzystujące ray-casting dla przeszkód i granic środowiska;
-- pomiary czujników zwracane przez każdy krok symulacji;
-- konfigurowalny układ trzech przednich czujników odległości;
-- polimorficzny kontroler reaktywnego unikania przeszkód;
-- aplikacja konsolowa prezentująca przebieg symulacji i pomiary czujnika;
-- serwer HTTP udostępniający inicjalizację, stan, konfigurację, krok i reset symulacji;
-- edytor sceny i wizualizacja symulacji w przeglądarce;
-- 195 testów jednostkowych.
-
-## Co nowego w v0.5
-
-- `SceneConfig` i `SimulationRunner` łączą konfigurację sceny z sesją symulacji;
-- serwer C++ udostępnia endpointy `/api/simulation/init`, `/config`, `/state`, `/step` i `/reset` oraz serwuje frontend;
-- `/config` zwraca geometrię zamontowanych czujników, a pomiary zawierają odpowiadające im `sensor_id`;
-- frontend pozwala edytować scenę, sterować symulacją i oglądać pomiary oraz trajektorię;
-- testy API sprawdzają endpointy, a testy Playwright sprawdzają interfejs w Chromium, również z rzeczywistym serwerem C++.
-
-## Co nowego w v0.4
-
-W porównaniu z v0.3 dodano:
-
-- interfejs `Controller` oraz `AvoidObstaclesController` sterowany przez `std::unique_ptr`;
-- konfigurację lewego, przedniego i prawego czujnika przez `setupDistanceSensorsOnRobot()`;
-- reakcję kontrolera: spowolnienie w strefie bezpiecznej oraz zatrzymanie i skręt w strefie krytycznej;
-- ograniczenie prędkości kątowej robota do przedziału `[-2π, 2π]`;
-- odrzucanie `NaN` oraz nieskończoności w parametrach modelu i czujnika;
-- demonstrację integrującą kontroler z pętlą symulacji oraz testy zachowania kontrolera.
-
-## Co nowego w v0.3
-
-W porównaniu z v0.2 dodano:
-
-- `DistanceSensor` z pozycją i orientacją względną wobec robota;
-- ray-casting granic środowiska oraz prostokątnych przeszkód;
-- minimalny i maksymalny zasięg oraz obsługę obiektów poza zakresem;
-- wybór najbliższego echa spośród przeszkód i granic środowiska;
-- wyniki ray-castingu dla każdego czujnika w `SimulationUpdate`;
-- konfigurowalną, dodatnią i nieparzystą liczbę promieni w `Simulation`;
-- prezentację pomiarów po każdym kroku w aplikacji demonstracyjnej;
-- testy geometrii, czujnika i integracji czujników z symulacją.
-
-## Wymagania
-
-- kompilator C++ obsługujący C++17;
-- CMake 3.16 lub nowszy;
-- dostęp do Internetu podczas pierwszej konfiguracji, ponieważ CMake pobiera nlohmann/json 3.11.3 i cpp-httplib 0.60.1, a przy `BUILD_TESTING=ON` także GoogleTest 1.14.0;
-- do testów API: Python 3 z pakietami z `tests/api/requirements.txt`;
-- do testów interfejsu: Node.js, npm i Chromium zainstalowane przez Playwright.
-
-## Budowanie projektu
-
-### Aplikacja i testy
-
-W katalogu głównym projektu wykonaj:
+From the repository root:
 
 ```bash
 cmake -S . -B build -DBUILD_TESTING=ON
 cmake --build build --parallel
 ```
 
-Znaczenie katalogów:
+This builds the `robot_simulator` library, `robot_simulator_app` terminal demo, `robot_simulator_server`, and `robot_simulator_tests`. Use `-DBUILD_TESTING=OFF` if you do not need the C++ tests.
 
-- `-S .` wskazuje bieżący katalog jako katalog źródeł;
-- `-B build` umieszcza wygenerowane pliki i wyniki kompilacji w katalogu `build/`.
+## Run the demos
 
-### Budowanie bez testów
-
-Jeżeli chcesz zbudować bibliotekę, aplikację i serwer bez GoogleTest:
-
-```bash
-cmake -S . -B build -DBUILD_TESTING=OFF
-cmake --build build --parallel
-```
-
-### Dostępne targety
-
-| Target | Rodzaj | Przeznaczenie |
-| --- | --- | --- |
-| `robot_simulator` | biblioteka | model robota, środowiska, przeszkód, geometrii i symulacji |
-| `robot_simulator_app` | program | terminalowa demonstracja symulatora |
-| `robot_simulator_server` | program | HTTP API i serwowanie frontendu z `frontend/` |
-| `robot_simulator_tests` | program testowy | testy GoogleTest, dostępne przy `BUILD_TESTING=ON` |
-
-Wybrany target można zbudować osobno:
-
-```bash
-cmake --build build --target robot_simulator_app
-```
-
-## Uruchamianie aplikacji
-
-Po zbudowaniu targetu uruchom:
+Terminal demo:
 
 ```bash
 ./build/robot_simulator_app
 ```
 
-Aplikacja tworzy środowisko o długości `30` i szerokości `12`, robota rozpoczynającego ruch w punkcie `(-8, 0)` oraz przeszkodę w punkcie `(8, 0)`.
+It runs a fixed scene with three front distance sensors and the obstacle avoidance controller, printing each step and sensor reading. It takes no command line arguments.
 
-Demonstracja tworzy trzy przednie czujniki i przekazuje komendy prędkości przez `AvoidObstaclesController`. Każda iteracja najpierw ustawia prędkość docelową, następnie kontroler ją koryguje na podstawie pomiarów, a na końcu `Simulation` wykonuje krok.
+Browser demo: start the server **from the repository root**, then open <http://127.0.0.1:8080/>.
 
-Demonstracja składa się z dwóch faz:
+```bash
+./build/robot_simulator_server
+```
 
-1. robot wykonuje cztery kroki z prędkością liniową `2.0` i kątową `0.25 rad/s`;
-2. robot otrzymuje komendę jazdy `2.0 m/s` na wprost, po czym symulacja próbuje wykonać maksymalnie dziesięć kroków.
+The browser UI lets you edit or import a scene, initialize it, step or start the simulation, and inspect sensor readings and the trajectory. The server holds one session in memory; restarting it clears that session. The UI can export a scene to JSON for later import. See [frontend/README.md](frontend/README.md) for UI details.
 
-Robot ma trzy czujniki odległości, każdy z trzema promieniami. Po każdej próbie kroku program wypisuje numer próby, numer zaakceptowanego kroku, czas, stan kroku oraz wynik ray-castingu z odległością najbliższego echa.
+## Run the tests
 
-## Uruchamianie testów
-
-Po skonfigurowaniu projektu z `BUILD_TESTING=ON` wykonaj:
+**C++:**
 
 ```bash
 ctest --test-dir build --output-on-failure
 ```
 
-Testy endpointów wymagają pakietów Pythona i zbudowanego `robot_simulator_server`:
+`SimulationTests.StopsRobotWhenStepPassesThroughObstacle` is an intentionally failing TDD test: the current collision check misses an obstacle crossed between two step endpoints. Until that behavior is fixed, run the remaining C++ tests with:
 
 ```bash
-python3 -m venv .venv
-.venv/bin/python -m pip install -r tests/api/requirements.txt
-.venv/bin/python -m pytest tests/api -q
+ctest --test-dir build -E StopsRobotWhenStepPassesThroughObstacle --output-on-failure
 ```
 
-Testy przeglądarkowe wymagają Chromium. `test:e2e` uruchamia własny proces serwera C++, dlatego port `127.0.0.1:8080` musi być wolny:
+**Python API:** You need Python 3.10 or newer, [uv](https://docs.astral.sh/uv/), a built `robot_simulator_server`, and a free `127.0.0.1:8080` port. Run from the repository root:
+
+```bash
+uv run pytest
+```
+
+`pyproject.toml` declares the test dependencies and configures pytest to run `tests/api` without unrelated system plugins. `uv.lock` records dependency versions. uv creates and updates `.venv` automatically; the API tests start and stop their own server.
+
+**Browser:** You need Node.js, npm, and Playwright's Chromium. Build the C++ server first and leave port `127.0.0.1:8080` free for the real-server test.
 
 ```bash
 cd frontend
@@ -152,305 +65,59 @@ npm test
 npm run test:e2e
 ```
 
-`npm test` sprawdza interfejs z deterministycznymi odpowiedziami API. `npm run test:e2e` używa rzeczywistego serwera C++ i nie uruchamia atrap endpointów. GitHub Actions wykonuje GoogleTest i pytest w jednym jobie, a testy Playwright w osobnym jobie z Chromium.
+`npm test` checks the UI with controlled API responses; `npm run test:e2e` starts its own C++ server and exercises the real endpoints.
 
-Projekt zawiera 195 testów C++:
+## Simulation model
 
-| Obszar | Liczba testów |
-| --- | ---: |
-| geometria i ray-casting | 37 |
-| robot | 25 |
-| przeszkody | 8 |
-| środowisko i kolizje | 21 |
-| czujnik odległości | 47 |
-| symulacja | 19 |
-| kontroler unikania przeszkód | 17 |
-| konfiguracja przednich czujników | 3 |
-| konfiguracja sceny i serializacja | 6 |
-| runner symulacji | 12 |
-| **razem** | **195** |
+- `Pose{x, y, theta}` gives an object's **center** and heading. Angles and angular velocities use radians.
+- `Rectangle{width, length}` has its **length along local X** and width along local Y. The environment is centered at `(0, 0)`, spanning `[-length/2, length/2]` on X and `[-width/2, width/2]` on Y.
+- Use consistent length and time units throughout a scene. `Velocity` contains linear speed in length/time and angular speed in radians/time.
+- `Simulation::update()` predicts the next pose, checks its corners against the world boundary and obstacles, then either accepts the step or stops the robot at its previous pose. Touching an obstacle counts as a collision; touching the world boundary is allowed. Accepted poses are recorded in the robot's trajectory.
+- `Simulation::runSteps(n)` stops after `n` accepted updates or the first rejected update. `SimulationUpdate` reports whether a step was accepted, its stop reason, and one result per attached sensor.
+- Distance sensors cast a positive, odd number of rays, including a central ray. They report the nearest obstacle or world boundary and distinguish in-range detections from out-of-range echoes. Sensor readings are deterministic and contain no simulated noise.
+- `Environment::addObstacle()` assigns each stored obstacle an ID equal to its insertion index. `Obstacle::getObstacleId()` returns an optional ID; newly constructed obstacles have no ID. IDs are local to each environment.
 
-Testy obejmują między innymi walidację wymiarów i kroku czasowego, ruch prostoliniowy i kołowy, obrócone prostokąty, SAT, granice środowiska, ray-casting przeszkód i granic, zasięgi czujnika, integrację czujników z symulacją, historię trajektorii oraz liczniki czasu i kroków.
+The collision check currently tests the **end pose only**. A large step can pass through an obstacle and still be accepted; the failing C++ test above demonstrates this. The simulator does not calculate the time or point of contact. The obstacle avoidance controller reacts to sensor readings but does not plan a route.
 
-## HTTP API symulacji
-
-Po zbudowaniu uruchom `./build/robot_simulator_server` z katalogu głównego projektu. Serwer nasłuchuje na `127.0.0.1:8080`.
-
-- `POST /api/simulation/init` przyjmuje scenę w formacie `scenarios/defaul.json` i tworzy sesję.
-- `GET /api/simulation/config` zwraca konfigurację aktywnej sceny oraz tablicę `sensors`. Przed inicjalizacją zwraca `409` z polem `error`.
-- `GET /api/simulation/state` zwraca bieżący stan, a `POST /api/simulation/step` wykonuje krok.
-- `POST /api/simulation/reset` odtwarza ostatnio załadowaną scenę.
-
-Każdy wpis `sensors` zawiera `id`, `role`, `relative_pose` (`x`, `y`, `theta`), `min_distance`, `max_distance` i `field_of_view`. Kąty są w radianach. Obecne role to kolejno `front_left`, `front` i `front_right`; opisy pochodzą z czujników faktycznie zamontowanych na robocie. Każdy wpis `update.raycast_results` ma `sensor_id` odpowiadający `id` w `sensors`. Jeden wynik opisuje zbiorczy pomiar czujnika, a nie poszczególne promienie.
-
-### Frontend
-
-Serwer udostępnia interfejs pod `http://127.0.0.1:8080/`. Po otwarciu strony frontend pobiera `/api/simulation/config` i `/api/simulation/state`, jeśli istnieje aktywna sesja; w przeciwnym razie pokazuje scenę domyślną do edycji. Formularz i przeciąganie na planszy zmieniają projekt sceny. Przycisk **Initialize** wysyła go jako JSON do `/api/simulation/init` i pobiera aktualną konfigurację oraz stan. **Step** wywołuje jeden `/api/simulation/step`, **Start** wysyła kolejne kroki sekwencyjnie, **Pause** zatrzymuje pętlę, a **Reset** wywołuje `/api/simulation/reset`.
-
-Plansza przedstawia geometrię, kierunki czujników, zbiorcze odległości i trajektorię z kroków wykonanych w bieżącej karcie. Po odświeżeniu strony stan serwera wraca przez `/state`, ale wcześniejsza trajektoria nie jest dostępna w API, więc jej rysowanie zaczyna się od aktualnej pozycji.
-
-## Model danych
-
-Podstawowe typy znajdują się w `include/robot_simulation/types.hpp`:
-
-```cpp
-struct Pose {
-    double x;
-    double y;
-    double theta;
-};
-
-struct Velocity {
-    double linear_velocity;
-    double angular_velocity;
-};
-
-struct Rectangle {
-    double width;
-    double length;
-};
-
-struct Point {
-    double x;
-    double y;
-};
-
-using RectangleCorners = std::array<Point, 4>;
-```
-
-- `Pose` opisuje środek obiektu i jego orientację `theta` w radianach;
-- `Velocity` przechowuje prędkość liniową oraz kątową w radianach na jednostkę czasu;
-- `Rectangle` przechowuje szerokość i długość obiektu;
-- `Point` reprezentuje punkt w układzie 2D;
-- `RectangleCorners` zawiera cztery wierzchołki prostokąta.
-
-Projekt nie narzuca jednostki długości ani czasu. Wszystkie dane wejściowe muszą jednak używać jednego, spójnego układu jednostek.
-
-## Układ współrzędnych
-
-Środek `Environment` znajduje się w punkcie `(0, 0)`. Dla rozmiaru:
-
-```cpp
-Rectangle{width, length}
-```
-
-granice środowiska wynoszą:
-
-```text
-x: od -length / 2 do +length / 2
-y: od -width  / 2 do +width  / 2
-```
-
-Pozycja robota i przeszkody oznacza środek ich prostokątnego obrysu. Długość leży w lokalnym kierunku osi X obiektu, a szerokość w lokalnym kierunku osi Y.
-
-## Główne elementy biblioteki
-
-### `Robot`
-
-`Robot` przechowuje pozycję, prędkość, rozmiar i historię trajektorii.
-
-Najważniejsze metody:
-
-- `move(dt)` wykonuje jeden ruch i dodaje nową pozycję do trajektorii;
-- `robotNextPose(dt)` oblicza przewidywaną pozycję bez zmiany robota i trajektorii;
-- `setVelocity(linear, angular)` ustawia obie składowe prędkości;
-- `stop()` zeruje prędkość liniową i kątową;
-- `getRobotCorners()` zwraca wierzchołki aktualnego obrysu;
-- `getTrajectory()` udostępnia historię pozycji jako stałą referencję.
-
-Trajektoria zawsze rozpoczyna się od pozycji przekazanej do konstruktora. Każde wywołanie `move()` dodaje dokładnie jeden punkt.
-
-Konstruktor odrzuca zerową i ujemną szerokość lub długość przez `std::invalid_argument`.
-
-### `Obstacle`
-
-`Obstacle` reprezentuje nieruchomą, prostokątną przeszkodę. Przechowuje jej pozycję i rozmiar, a `getObstacleCorners()` zwraca cztery wierzchołki obróconego obrysu.
-
-Konstruktor odrzuca zerową i ujemną szerokość lub długość.
-
-### `Environment`
-
-`Environment` przechowuje rozmiar świata oraz kolekcję przeszkód.
-
-- `addObstacle()` dodaje kopię przeszkody do środowiska;
-- `collides()` sprawdza kolizję robota lub podanego przewidywanego obrysu z przeszkodami;
-- `isRobotInside()` sprawdza, czy wszystkie narożniki robota lub obrysu mieszczą się w środowisku;
-- `getObstacles()` zwraca stałą referencję do kolekcji przeszkód.
-
-Dotknięcie granicy środowiska jest dozwolone. Dopiero narożnik znajdujący się poza granicą powoduje odrzucenie pozycji.
-
-### `DistanceSensor`
-
-`DistanceSensor` jest montowany względem układu robota przez `Pose` przekazane do konstruktora. Metoda `getWorldPose()` wyznacza jego aktualną pozycję i orientację w świecie.
-
-Najważniejsza metoda pomiarowa to:
-
-```cpp
-RaycastResult nearestObjectDetected(
-    const Environment& environment,
-    int ray_count,
-    const Pose& robot_pose
-) const;
-```
-
-`ray_count` musi być dodatni i nieparzysty; jeden promień zawsze biegnie w centralnym kierunku czujnika. Pomiar uwzględnia przeszkody oraz granice środowiska i wybiera najbliższe echo. `distance_to_object` zachowuje fizyczną odległość także wtedy, gdy echo jest poza zakresem czujnika.
-
-```cpp
-struct RaycastResult {
-    bool object_detected;
-    double distance_to_object;
-    DetectionType detection_type;
-};
-```
-
-- `OBJECTDETECTED` oznacza echo w przedziale `[min_distance, max_distance]`;
-- `OBJECTOUTOFRANGE` oznacza echo poza tym przedziałem;
-- `NOOBJECTDETECTED` oznacza brak echa; dla `nearestObjectDetected()` czujnik znajdujący się wewnątrz poprawnego prostokątnego środowiska zwykle zawsze otrzyma echo granicy.
-
-Robot może przechowywać wiele czujników przez `addDistanceSensor()`, a `getDistanceSensors()` udostępnia je jako stałą referencję.
-
-### `Simulation`
-
-`Simulation` łączy istniejący obiekt `Robot` z istniejącym obiektem `Environment` i przechowuje do nich referencje. Robot i środowisko muszą więc istnieć przez cały czas życia symulacji.
-
-Konstruktor przyjmuje dodatni czas jednego kroku `dt` oraz opcjonalną liczbę promieni używanych przez czujniki. Liczba promieni musi być dodatnia i nieparzysta; domyślna wartość to `1`.
-
-`update()` wykonuje pojedynczy krok:
-
-1. oblicza przewidywaną pozycję robota;
-2. wyznacza przewidywane narożniki obrysu;
-3. sprawdza granice środowiska;
-4. sprawdza kolizję z przeszkodami;
-5. akceptuje ruch dopiero wtedy, gdy przewidywany stan jest bezpieczny.
-6. wykonuje ray-casting dla każdego czujnika robota i dołącza wyniki do `SimulationUpdate`.
-
-Jeżeli krok jest niedozwolony, robot pozostaje w ostatniej bezpiecznej pozycji, jego prędkość zostaje wyzerowana, a odrzucony punkt nie trafia do trajektorii i nie zwiększa liczników symulacji.
-
-`runSteps(step_count)` wielokrotnie wywołuje `update()` aż do wykonania zadanej liczby kroków albo do pierwszego odrzuconego kroku. Argument oznacza liczbę kroków, a nie czas w sekundach.
-
-`getSimulationStep()` zwraca całkowitą liczbę zaakceptowanych kroków od utworzenia symulacji. `getSimulationTime()` zwraca tę liczbę pomnożoną przez `dt`.
-
-## Wyniki symulacji
-
-Pojedynczy krok zwraca:
-
-```cpp
-struct SimulationUpdate {
-    StopReason stop_reason;
-    bool step_accepted;
-    std::vector<RaycastResult> raycast_results;
-};
-```
-
-Seria kroków zwraca:
-
-```cpp
-struct SimulationResult {
-    std::size_t executed_steps;
-    bool simulation_completed;
-    StopReason stop_reason;
-};
-```
-
-- `executed_steps` dotyczy tylko bieżącego wywołania `runSteps()`;
-- `simulation_completed` oznacza, że wykonano wszystkie żądane kroki;
-- `stop_reason` wyjaśnia przyczynę wcześniejszego zatrzymania.
-- `raycast_results` zawiera jeden pomiar dla każdego czujnika robota, także gdy próba kroku została odrzucona.
-
-Możliwe przyczyny zatrzymania:
-
-```cpp
-StopReason::None
-StopReason::OutOfEnvironment
-StopReason::ObstacleCollision
-```
-
-Zaakceptowany krok nie musi zmieniać pozycji, na przykład gdy robot ma zerową prędkość.
-
-## Wykrywanie kolizji
-
-Kolizje pomiędzy robotem i przeszkodami są wykrywane za pomocą SAT:
-
-1. wybierane są osie zgodne z bokami robota i przeszkody;
-2. narożniki obu prostokątów są rzutowane na każdą oś;
-3. rozłączne przedziały na dowolnej osi oznaczają brak kolizji;
-4. nakładanie się przedziałów na wszystkich osiach oznacza kolizję.
-
-Dotknięcie przeszkody bokiem lub narożnikiem jest traktowane jako kolizja.
-
-## Przykład użycia biblioteki
+Minimal library usage:
 
 ```cpp
 #include <robot_simulation/environment.hpp>
-#include <robot_simulation/distance_sensor.hpp>
-#include <robot_simulation/obstacle.hpp>
 #include <robot_simulation/robot.hpp>
 #include <robot_simulation/simulation.hpp>
 
 using namespace robot_simulation;
-
-Rectangle environment_size{20.0, 30.0};
-Environment environment(environment_size);
-
-environment.addObstacle(Obstacle(
-    Pose{6.5, 0.0, 0.0},
-    Rectangle{2.0, 4.0}
-));
-
-Robot robot(
-    Pose{0.0, 0.0, 0.0},
-    Velocity{2.0, 0.0},
-    Rectangle{2.0, 4.0}
-);
-
-robot.addDistanceSensor(DistanceSensor(0.0, 10.0, Pose{}, pi / 2.0));
-Simulation simulation(0.5, robot, environment, 3);
-const SimulationUpdate update = simulation.update();
-
-if (!update.raycast_results.empty()) {
-    const RaycastResult& measurement = update.raycast_results.front();
-    // measurement opisuje najbliższe echo pierwszego czujnika.
-}
-
-const auto& trajectory = robot.getTrajectory();
+Environment world(Rectangle{20.0, 30.0});
+Robot robot(Pose{0.0, 0.0, 0.0}, Velocity{2.0, 0.0}, Rectangle{2.0, 4.0});
+Simulation simulation(0.5, robot, world);
+SimulationUpdate result = simulation.update();
 ```
 
-## Struktura projektu
+`Simulation` holds references to the robot and environment, so both must outlive it.
 
-```text
-robot_simulator/
-├── app/
-│   ├── main.cpp                 Aplikacja demonstracyjna
-│   └── server_main.cpp          Serwer HTTP
-├── frontend/                    Interfejs HTML, CSS i JavaScript
-├── include/robot_simulation/    Publiczne nagłówki biblioteki
-├── src/                         Implementacje biblioteki
-├── tests/                       Testy GoogleTest i funkcje pomocnicze
-├── CMakeLists.txt               Konfiguracja targetów CMake
-├── README.md                    Dokumentacja projektu
-└── .gitignore                   Reguły ignorowania plików lokalnych
+Public headers are in `include/robot_simulation/`, implementations in `src/`, C++ tests in `tests/`, and API tests in `tests/api/`. Example scene JSON is in [`scenarios/defaul.json`](scenarios/defaul.json) (the filename is spelled `defaul` in this repository).
+
+## HTTP API
+
+The server listens on `127.0.0.1:8080` and serves both the browser UI and these endpoints:
+
+| Method and path | Purpose |
+| --- | --- |
+| `GET /api/health` | Server health |
+| `POST /api/simulation/init` | Create or replace the session from scene JSON |
+| `GET /api/simulation/config` | Current scene and attached sensor descriptions |
+| `GET /api/simulation/state` | Current simulation snapshot |
+| `POST /api/simulation/step` | Attempt one step |
+| `POST /api/simulation/reset` | Restore the initialized scene |
+
+For example, with the server running, initialize it from the included scene:
+
+```bash
+curl -H 'Content-Type: application/json' --data-binary @scenarios/defaul.json http://127.0.0.1:8080/api/simulation/init
 ```
 
-## Ograniczenia
+`/config`, `/state`, `/step`, and `/reset` return HTTP 409 until a scene is initialized. After a rejected step, `/step` returns 409 until reset or reinitialization. Sensor IDs in step results match the descriptions returned by `/config`.
 
-- Kolizja jest sprawdzana dyskretnie dla stanu na końcu kroku. Przy dużym `dt`, dużej prędkości albo cienkiej przeszkodzie robot może przeskoczyć przez przeszkodę pomiędzy kolejnymi stanami.
-- Przy przewidzianej kolizji robot pozostaje w pozycji sprzed kroku. Symulator nie wyznacza dokładnego czasu ani punktu kontaktu.
-- Historia trajektorii rośnie z każdym wykonanym ruchem i nie ma obecnie limitu rozmiaru.
-- Czujnik nie rozróżnia w `RaycastResult`, czy echo pochodzi od przeszkody czy granicy środowiska.
-- Model pomiaru nie uwzględnia szumu ani błędów systematycznych.
-- Kontroler unikania jest reaktywny: nie planuje trasy do celu ani nie gwarantuje ominięcia każdej geometrii przeszkód przy dowolnym kroku czasowym i prędkości.
-- Aplikacja demonstracyjna nie przyjmuje jeszcze parametrów z wiersza poleceń ani pliku konfiguracyjnego.
-- Serwer nie zachowuje aktywnej sesji po restarcie; frontend pozwala wyeksportować scenę do pliku JSON i ponownie ją zaimportować.
-- API zwraca zbiorczy wynik na czujnik, bez pozycji trafień poszczególnych promieni. Trajektoria na frontendzie obejmuje tylko kroki bieżącej karty.
+## License
 
-## Możliwe kierunki rozwoju
-
-- ciągłe wykrywanie kolizji lub adaptacyjny krok czasowy;
-- dokładne wyznaczanie czasu i punktu kontaktu;
-- opcjonalny limit lub wyłączanie historii trajektorii;
-- konfiguracja sceny z argumentów programu lub pliku;
-- trwałe zapisywanie sesji i trajektorii po stronie serwera;
-
-## Licencja
-
-Projekt nie ma jeszcze określonej licencji. Przed publicznym udostępnieniem do ponownego użycia należy dodać plik `LICENSE`.
+This repository does not currently include a license file.

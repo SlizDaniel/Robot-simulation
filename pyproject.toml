@@ -1,0 +1,18 @@
+[project]
+name = "robot-simulator-api-tests"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4",
+    "requests",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+addopts = ["--disable-plugin-autoload", "-q"]
+testpaths = ["tests/api"]
